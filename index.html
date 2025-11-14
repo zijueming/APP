@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文献管理平台</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 使用 'Inter' 字体 (Tailwind 默认) */
+        body {
+            font-family: 'Inter', 'sans-serif';
+            overflow: hidden; /* 防止页面滚动 */
+        }
+        /* 详情页标签激活样式 */
+        .tab-active {
+            border-bottom-color: #3b82f6; /* blue-600 */
+            color: #3b82f6;
+            font-weight: 500;
+        }
+        /* 加载动画 */
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="flex h-screen">
+        <!-- 侧边栏 -->
+        <aside class="w-60 bg-white shadow-md flex flex-col flex-shrink-0">
+            <!-- Logo -->
+            <div class="h-16 flex items-center justify-center border-b">
+                <h1 class="text-xl font-bold text-blue-600">文析通</h1>
+            </div>
+            
+            <!-- 导航菜单 -->
+            <nav class="flex-1 mt-4">
+                <a href="#" class="flex items-center px-6 py-3 text-blue-600 bg-blue-50 border-r-4 border-blue-600">
+                    <!-- icon: 文献列表 -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    <span>文献列表</span>
+                </a>
+            </nav>
+
+            <!-- 统计信息 -->
+            <div class="p-4 m-4 border rounded-lg bg-gray-50">
+                <h3 class="font-semibold text-sm mb-4">统计信息</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span>总文献数</span>
+                        <span id="stat-total" class="font-medium">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>本月新增</span>
+                        <span id="stat-new" class="font-medium text-green-600">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>总标签数</span>
+                        <span id="stat-tags" class="font-medium text-blue-600">0</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 flex flex-col">
+            <!-- 顶部栏 -->
+            <header class="h-16 bg-white border-b flex items-center justify-between px-6 flex-shrink-0">
+                <!-- 搜索框 -->
+                <div class="relative">
+                    <input type="text" placeholder="全局搜索文献..." class="pl-10 pr-4 py-2 w-80 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- icon: 搜索 -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+                
+                <!-- 右侧图标和用户 -->
+                <div class="flex items-center space-x-4">
+                    <!-- 配置API按钮 -->
+                    <button id="openApiModalBtn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        配置API
+                    </button>
+                    <!-- 用户头像 -->
+                    <div class="flex items-center space-x-2">
+                        <span class="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">张</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ************************** -->
+            <!-- * 文献列表视图     * -->
+            <!-- ************************** -->
+            <main id="listView" class="flex-1 p-6 overflow-auto">
+                <!-- 面包屑 -->
+                <div class="text-sm text-gray-500 mb-4">
+                    <span>首页</span> &gt; <span>文献列表</span>
+                </div>
+                
+                <!-- 标题和操作按钮 -->
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold">我的文献</h2>
+                    <div class="space-x-2">
+                        <!-- 隐藏的 file input -->
+                        <input type="file" id="pdfUploadInput" class="hidden" accept=".pdf">
+                        
+                        <button id="importButton" class="flex items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            导入文献
+                        </button>
+                        <button class="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            批量导出
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 过滤器和表格 -->
+                <div class="bg-white rounded-lg shadow-lg">
+                    <!-- 过滤器 -->
+                    <div class="p-4 border-b flex items-center justify-between space-x-4">
+                        <input type="text" placeholder="搜索文献标题、作者、关键词..." class="flex-1 border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select class="border rounded-lg px-4 py-2 text-sm focus:outline-none">
+                            <option>全部年份</option>
+                        </select>
+                        <select id="tagFilterDropdown" class="border rounded-lg px-4 py-2 text-sm focus:outline-none">
+                            <option>全部标签</option>
+                            <!-- 标签将动态填充 -->
+                        </select>
+                        <button id="openGlobalTagModalBtn" class="text-sm text-blue-600 hover:underline whitespace-nowrap">管理全部标签</button>
+                    </div>
+                    
+                    <!-- 表格 -->
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-4 w-12"><input type="checkbox"></th>
+                                <th class="p-4">标题</th>
+                                <th class="p-4 w-40">作者</th>
+                                <th class="p-4 w-24">年份</th>
+                                <th class="p-4 w-48">自定义标签</th>
+                                <th class="p-4 w-32">操作</th>
+                            </tr>
+                        </thead>
+                        <!-- [新] 动态表格主体 -->
+                        <tbody id="literatureTableBody">
+                            <!-- 示例: 无数据时 -->
+                             <tr id="noDataRow">
+                                <td colspan="6" class="p-8 text-center text-gray-500">
+                                    暂无文献。请点击 "导入文献" 开始。
+                                </td>
+                            </tr>
+                            <!-- 动态内容将插入此处 -->
+                        </tbody>
+                    </table>
+
+                    <!-- 分页 -->
+                    <div class="p-4 flex justify-between items-center text-sm">
+                        <div>
+                            <span id="paginationInfo">显示 0 条, 共 0 条记录</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <!-- 分页功能暂未实现 -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ************************** -->
+            <!-- * 文献详情视图     * -->
+            <!-- ************************** -->
+            <main id="detailView" class="flex-1 p-6 overflow-auto hidden bg-white">
+                <!-- 顶部操作栏 -->
+                <div class="flex justify-between items-center mb-4">
+                    <div class="text-sm text-gray-500">
+                        <button id="backToListBtn" class="text-blue-600 hover:underline">&lt; 返回文献列表</button>
+                    </div>
+                    <div class="space-x-2">
+                        <button id="detailEditTagsBtn" class="flex-shrink-0 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">编辑标签</button>
+                        <button class="flex-shrink-0 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">导出</button>
+                        <button id="detailDeleteBtn" class="flex-shrink-0 bg-red-50 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-100">删除</button>
+                    </div>
+                </div>
+
+                <!-- 文献信息 (来自JSON) -->
+                <div id="lit-info" class="mb-6">
+                    <h2 id="lit-title" class="text-2xl font-semibold mb-2"></h2>
+                    <p id="lit-authors" class="text-sm text-gray-600 mb-1"></p>
+                    <p class="text-sm text-gray-500">
+                        <span id="lit-journal"></span>, <span id="lit-year"></span>
+                    </p>
+                </div>
+
+                <!-- [修改] 移除 Tab 导航 -->
+                <!-- <div class="border-b border-gray-200 mb-6"> ... </div> -->
+
+                <!-- [修改] Tab 内容 (改为单页滚动) -->
+                <div id="detailTabContent" class="max-w-4xl mx-auto space-y-10">
+                    <!-- 1. 文献概览 -->
+                    <div id="tab-overview" class="tab-content space-y-4">
+                        <h3 class="text-xl font-semibold border-b pb-2">摘要</h3>
+                        <p id="lit-abstract" class="text-gray-700 leading-relaxed"></p>
+                    </div>
+
+                    <!-- 2. 图表解析 -->
+                    <div id="tab-figures" class="tab-content space-y-4">
+                        <h3 class="text-xl font-semibold border-b pb-2">关键图表</h3>
+                        <div id="lit-figures-list" class="space-y-6">
+                            <!-- 图表项将在这里动态生成 -->
+                        </div>
+                    </div>
+
+                    <!-- 3. 结论与创新点 -->
+                    <div id="tab-conclusion" class="tab-content space-y-4">
+                        <h3 class="text-xl font-semibold border-b pb-2">主要结论</h3>
+                        <div id="lit-conclusions" class="text-gray-700"></div>
+
+                        <h3 class="text-xl font-semibold border-b pb-2 mt-6">创新点</h3>
+                        <div id="lit-innovations" class="text-gray-700"></div>
+                    </div>
+
+                    <!-- 4. 不足与展望 -->
+                    <div id="tab-todos" class="tab-content space-y-4">
+                        <h3 class="text-xl font-semibold border-b pb-2">不足</h3>
+                        <div id="lit-shortcomings" class="text-gray-700"></div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- ************************** -->
+    <!-- * 模态弹窗       * -->
+    <!-- ************************** -->
+
+    <!-- 1. 配置API 模态窗 -->
+    <div id="apiModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold">配置 API</h3>
+                <button id="closeApiModalBtn" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div>
+                <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-2">DeepSeek API 密钥</label>
+                <input type="password" id="apiKey" name="apiKey" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入您的API密钥">
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="saveApiKeyBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- [新] 2. 管理标签 模态窗 (重新添加) -->
+    <div id="tagModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="tagModalTitle" class="text-lg font-semibold">管理自定义标签</h3>
+                <button id="closeTagModalBtn" class="text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <!-- [新] 添加新标签 (可隐藏) -->
+            <div id="addNewTagSection" class="flex space-x-2 mb-4">
+                <input type="text" id="newTagName" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="输入新标签名称">
+                <button id="addNewTagBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">添加</button>
+            </div>
+            <!-- 现有标签列表 -->
+            <div class="space-y-2 max-h-60 overflow-auto" id="existingTagsList">
+                <!-- 标签列表将动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- [新] 3. 加载中 覆盖层 (之前存在，保持) -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex-col flex items-center justify-center hidden z-[100]">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+        <h2 class="text-xl font-semibold text-white">正在分析中...</h2>
+        <p class="text-white">这可能需要1-2分钟，请勿关闭页面。</p>
+    </div>
+    
+    <!-- [新] 4. 自定义确认框 模态窗 (重新添加) -->
+    <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-[101]">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
+            <h3 id="confirmTitle" class="text-lg font-semibold mb-4">确认操作</h3>
+            <p id="confirmMessage" class="text-gray-700 mb-6">您确定要执行此操作吗？</p>
+            <div class="flex justify-end space-x-2">
+                <button id="confirmCancelBtn" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+                    取消
+                </button>
+                <button id="confirmOkBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
+                    确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 5. 图片查看 模态窗 -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-[102]" onclick="closeModal(this)">
+        <img id="imageModalContent" src="" alt="文献图片" class="max-w-[90vw] max-h-[90vh] rounded-lg shadow-xl">
+    </div>
+
+    <!-- 主应用JavaScript -->
+    <script>
+        // 全局变量
+        let apiKey = localStorage.getItem('deepseek_api_key') || '';
+        let currentPaperId = null;
+
+        // DOM 元素
+        const importButton = document.getElementById('importButton');
+        const pdfUploadInput = document.getElementById('pdfUploadInput');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const apiModal = document.getElementById('apiModal');
+        const openApiModalBtn = document.getElementById('openApiModalBtn');
+        const closeApiModalBtn = document.getElementById('closeApiModalBtn');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const apiKeyInput = document.getElementById('apiKey');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            loadLiteratureList();
+            
+            // 添加返回列表按钮事件监听
+            document.getElementById('backToListBtn').addEventListener('click', function() {
+                document.getElementById('detailView').classList.add('hidden');
+                document.getElementById('listView').classList.remove('hidden');
+            });
+        });
+
+        // 事件监听器初始化
+        function initializeEventListeners() {
+            // 导入文献按钮
+            importButton.addEventListener('click', function() {
+                if (!apiKey) {
+                    showApiModal();
+                    return;
+                }
+                pdfUploadInput.click();
+            });
+
+            // 文件上传处理
+            pdfUploadInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    uploadAndAnalyzePDF(e.target.files[0]);
+                }
+            });
+
+            // API 配置模态窗
+            openApiModalBtn.addEventListener('click', showApiModal);
+            closeApiModalBtn.addEventListener('click', hideApiModal);
+            saveApiKeyBtn.addEventListener('click', saveApiKey);
+
+            // 设置保存的API密钥
+            if (apiKey) {
+                apiKeyInput.value = apiKey;
+            }
+        }
+
+        // 上传和分析PDF文件
+        async function uploadAndAnalyzePDF(file) {
+            if (!file || !file.name.endsWith('.pdf')) {
+                alert('请选择有效的PDF文件');
+                return;
+            }
+
+            if (!apiKey) {
+                alert('请先配置API密钥');
+                showApiModal();
+                return;
+            }
+
+            // 显示加载状态
+            loadingOverlay.classList.remove('hidden');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // 上传成功，刷新文献列表
+                    alert('文献导入成功！');
+                    loadLiteratureList();
+                } else {
+                    // 上传失败，显示错误信息
+                    alert(`导入失败: ${result.error || '未知错误'}`);
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                alert('上传失败，请检查网络连接');
+            } finally {
+                // 隐藏加载状态
+                loadingOverlay.classList.add('hidden');
+                // 重置文件输入
+                pdfUploadInput.value = '';
+            }
+        }
+
+        // API 密钥管理
+        function showApiModal() {
+            apiModal.classList.remove('hidden');
+        }
+
+        function hideApiModal() {
+            apiModal.classList.add('hidden');
+        }
+
+        function saveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (!key) {
+                alert('请输入API密钥');
+                return;
+            }
+            apiKey = key;
+            localStorage.setItem('deepseek_api_key', key);
+            alert('API密钥已保存');
+            hideApiModal();
+        }
+
+        // 加载文献列表
+        async function loadLiteratureList() {
+            try {
+                const response = await fetch('/api/literature');
+                const literatureList = await response.json();
+                
+                if (response.ok) {
+                    renderLiteratureTable(literatureList);
+                    updateStatistics(literatureList);
+                } else {
+                    console.error('加载文献列表失败:', literatureList.error);
+                }
+            } catch (error) {
+                console.error('加载文献列表失败:', error);
+            }
+        }
+
+        // 渲染文献表格
+        function renderLiteratureTable(literatureList) {
+            const tableBody = document.getElementById('literatureTableBody');
+            const noDataRow = document.getElementById('noDataRow');
+            
+            if (literatureList.length === 0) {
+                noDataRow.classList.remove('hidden');
+                tableBody.innerHTML = '';
+                tableBody.appendChild(noDataRow);
+                return;
+            }
+
+            noDataRow.classList.add('hidden');
+            
+            tableBody.innerHTML = literatureList.map(item => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-4"><input type="checkbox"></td>
+                    <td class="p-4">
+                        <div class="font-medium">${escapeHtml(item.title || '无标题')}</div>
+                    </td>
+                    <td class="p-4">${escapeHtml((item.authors || []).join(', ') || '未知作者')}</td>
+                    <td class="p-4">${escapeHtml(item.year || '未知年份')}</td>
+                    <td class="p-4">
+                        <div class="flex flex-wrap gap-1">
+                            ${(item.custom_tags || []).map(tag => 
+                                `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${escapeHtml(tag)}</span>`
+                            ).join('')}
+                        </div>
+                    </td>
+                    <td class="p-4">
+                        <button class="text-blue-600 hover:underline text-sm" onclick="viewLiteratureDetail('${item.id}')">查看</button>
+                        <button class="text-red-600 hover:underline text-sm ml-2" onclick="deleteLiterature('${item.id}')">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新统计信息
+        function updateStatistics(literatureList) {
+            document.getElementById('stat-total').textContent = literatureList.length;
+            document.getElementById('stat-new').textContent = literatureList.length; // 简化：全部算作新增
+            document.getElementById('stat-tags').textContent = new Set(
+                literatureList.flatMap(item => item.custom_tags || [])
+            ).size;
+        }
+
+        // 查看文献详情
+        async function viewLiteratureDetail(paperId) {
+            try {
+                // 显示加载状态
+                loadingOverlay.classList.remove('hidden');
+                
+                const response = await fetch(`/api/literature/${paperId}`);
+                const literatureData = await response.json();
+                
+                if (response.ok) {
+                    // 切换到详情视图
+                    document.getElementById('listView').classList.add('hidden');
+                    document.getElementById('detailView').classList.remove('hidden');
+                    
+                    // 先设置当前文献ID，再填充数据
+                    currentPaperId = paperId;
+                    
+                    // 填充文献详情数据
+                    fillLiteratureDetail(literatureData);
+                } else {
+                    alert(`加载文献详情失败: ${literatureData.error || '未知错误'}`);
+                }
+            } catch (error) {
+                console.error('查看文献详情失败:', error);
+                alert('加载文献详情失败，请检查网络连接');
+            } finally {
+                // 隐藏加载状态
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // 填充文献详情数据
+        function fillLiteratureDetail(data) {
+            // 基本信息
+            document.getElementById('lit-title').textContent = data.文献信息?.标题 || '无标题';
+            document.getElementById('lit-authors').textContent = data.文献信息?.作者?.join(', ') || '未知作者';
+            document.getElementById('lit-journal').textContent = data.文献信息?.期刊 || '未知期刊';
+            document.getElementById('lit-year').textContent = data.文献信息?.年份 || '未知年份';
+            
+            // 摘要 - 修正路径
+            document.getElementById('lit-abstract').textContent = data.内容提取?.摘要 || '无摘要';
+            
+            // 结论与创新点 - 修正路径
+            const conclusions = data.内容提取?.结论 || [];
+            const innovations = data.内容提取?.创新点 || [];
+            document.getElementById('lit-conclusions').innerHTML = conclusions.length > 0 
+                ? conclusions.map(c => `<p class="mb-2">• ${escapeHtml(c)}</p>`).join('')
+                : '<p class="text-gray-500">无结论信息</p>';
+            document.getElementById('lit-innovations').innerHTML = innovations.length > 0 
+                ? innovations.map(i => `<p class="mb-2">• ${escapeHtml(i)}</p>`).join('')
+                : '<p class="text-gray-500">无创新点信息</p>';
+            
+            // 不足 - 修正路径
+            const shortcomings = data.内容提取?.不足 || [];
+            document.getElementById('lit-shortcomings').innerHTML = shortcomings.length > 0 
+                ? shortcomings.map(s => `<p class="mb-2">• ${escapeHtml(s)}</p>`).join('')
+                : '<p class="text-gray-500">无不足信息</p>';
+            
+            // 图表 - 修正路径和字段名
+            renderFiguresList(data.内容提取?.关键图表 || []);
+        }
+
+        // 渲染图表列表
+        function renderFiguresList(figures) {
+            const figuresContainer = document.getElementById('lit-figures-list');
+            
+            if (!figures || figures.length === 0) {
+                figuresContainer.innerHTML = '<p class="text-gray-500">无图表信息</p>';
+                return;
+            }
+            
+            figuresContainer.innerHTML = figures.map((figure, index) => {
+                // 根据图序号提取图片文件名（例如："图1" -> "fig1"）
+                const figureNumber = figure.图序号 ? figure.图序号.replace('图', '') : (index + 1).toString();
+                
+                // 尝试多种可能的图片格式
+                const imageFormats = ['png', 'jpeg', 'jpg'];
+                let imageElements = '';
+                
+                // 为每种格式创建图片元素
+                imageFormats.forEach((format, formatIndex) => {
+                    const isFirst = formatIndex === 0;
+                    imageElements += `
+                    <img src="/api/literature/${currentPaperId}/images/fig${figureNumber}.${format}" 
+                         alt="${figure.图序号 || `图${index + 1}`}" 
+                         class="w-full h-full object-cover cursor-pointer hover:opacity-80 ${!isFirst ? 'hidden' : ''}"
+                         onerror="${formatIndex < imageFormats.length - 1 ? `this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');` : `this.style.display='none'; document.getElementById('no-image-${index}').style.display='flex';`}"
+                         onclick="openImageModal('/api/literature/${currentPaperId}/images/fig${figureNumber}.${format}')">
+                    `;
+                });
+                
+                return `
+                <div class="border rounded-lg p-4">
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 w-48 h-32 bg-gray-100 rounded-lg overflow-hidden">
+                            ${imageElements}
+                            <div id="no-image-${index}" class="w-full h-full flex items-center justify-center text-gray-400 hidden">
+                                无图片
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-lg mb-2">${escapeHtml(figure.图序号 || `图${index + 1}`)}</h4>
+                            <p class="text-gray-700 leading-relaxed">${escapeHtml(figure.核心内容 || '无描述')}</p>
+                            <div class="mt-2 text-sm text-gray-600">
+                                <strong>图表类型:</strong> ${escapeHtml(figure.图表类型 || '未知')}
+                            </div>
+                            <div class="mt-1 text-sm text-gray-600">
+                                <strong>支撑结论:</strong> ${escapeHtml(figure.支撑结论 || '无')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // 打开图片模态窗
+        function openImageModal(imageSrc) {
+            document.getElementById('imageModalContent').src = imageSrc;
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        // 删除文献
+        function deleteLiterature(paperId) {
+            if (confirm('确定要删除这篇文献吗？')) {
+                fetch(`/api/literature/${paperId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('文献已删除');
+                        loadLiteratureList();
+                    } else {
+                        alert('删除失败: ' + (result.error || '未知错误'));
+                    }
+                })
+                .catch(error => {
+                    console.error('删除失败:', error);
+                    alert('删除失败，请检查网络连接');
+                });
+            }
+        }
+
+        // 工具函数：转义HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 模态窗关闭函数
+        function closeModal(modalElement) {
+            modalElement.classList.add('hidden');
+        }
+    </script>
