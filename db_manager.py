@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import shutil # 用于删除文件夹
-from typing import List, Dict, Optional, Set
+from typing import Callable, Dict, List, Optional, Set
 
 # --- 1. 配置 ---
 
@@ -32,6 +32,27 @@ def get_analysis_filepath(paper_id: str) -> str:
     获取特定文献的 analysis.json 文件路径
     """
     return os.path.join(get_paper_dir(paper_id), ANALYSIS_FILE_NAME)
+
+def _mutate_analysis_file(paper_id: str, update_function: Callable[[Dict], Dict]) -> Dict:
+    """
+    内部辅助：安全地读取、修改并写回 analysis.json
+    """
+    filepath = get_analysis_filepath(paper_id)
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Record {paper_id} not found")
+
+    with open(filepath, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    if 'custom_tags' not in data:
+        data['custom_tags'] = []
+
+    updated_data = update_function(data) or data
+
+    with open(filepath, 'w', encoding='utf-8') as f:
+        json.dump(updated_data, f, ensure_ascii=False, indent=2)
+
+    return updated_data
 
 # --- 3. 核心 API 函数 ---
 
@@ -142,53 +163,52 @@ def delete_literature_by_id(paper_id: str):
 
 # --- 4. 标签管理函数 ---
 
-def _update_json_file(paper_id: str, update_function):
-    """
-    (内部辅助函数) 安全地读取、修改、写回 JSON 文件
-    """
-    filepath = get_analysis_filepath(paper_id)
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Record {paper_id} not found")
-        
-    with open(filepath, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-        
-    # 确保 'custom_tags' 键存在
-    if 'custom_tags' not in data:
-        data['custom_tags'] = []
-        
-    # 调用传入的函数来修改 'data'
-    updated_data = update_function(data)
-    
-    with open(filepath, 'w', encoding='utf-8') as f:
-        json.dump(updated_data, f, ensure_ascii=False, indent=2)
-        
-    return updated_data.get('custom_tags', [])
-
 
 def add_tag_to_literature(paper_id: str, tag: str) -> List[str]:
     """
-    [供 POST /api/literature/<id>/tags 调用]
-    向 analysis.json 添加一个新标签 (如果不存在)
+    [对 POST /api/literature/<id>/tags 调用]
+    向analysis.json 添加一个新标签 (如果不存在)
     """
     def _add(data):
         if tag and tag not in data['custom_tags']:
             data['custom_tags'].append(tag)
         return data
         
-    return _update_json_file(paper_id, _add)
+    updated_data = _mutate_analysis_file(paper_id, _add)
+    return updated_data.get('custom_tags', [])
+
 
 def remove_tag_from_literature(paper_id: str, tag: str) -> List[str]:
     """
-    [供 DELETE /api/literature/<id>/tags/<tag> 调用]
-    从 analysis.json 移除一个标签 (如果存在)
+    [对 DELETE /api/literature/<id>/tags/<tag> 调用]
+    向analysis.json 移除一个标签(如果存在)
     """
     def _remove(data):
         if tag in data['custom_tags']:
             data['custom_tags'].remove(tag)
         return data
         
-    return _update_json_file(paper_id, _remove)
+    updated_data = _mutate_analysis_file(paper_id, _remove)
+    return updated_data.get('custom_tags', [])
+
+# --- 5. 图片元数据管理 ---
+
+def get_image_metadata(paper_id: str) -> List[Dict]:
+    data = get_literature_by_id(paper_id)
+    if not data:
+        raise FileNotFoundError(f"Record {paper_id} not found")
+    return data.get('image_metadata', [])
+
+def update_image_metadata(paper_id: str, metadata: List[Dict]) -> List[Dict]:
+    metadata = metadata or []
+
+    def _update(data):
+        data['image_metadata'] = metadata
+        return data
+        
+    updated_data = _mutate_analysis_file(paper_id, _update)
+    return updated_data.get('image_metadata', [])
+
 
 def get_all_tags() -> List[str]:
     """

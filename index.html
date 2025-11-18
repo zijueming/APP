@@ -36,7 +36,7 @@
         <aside class="w-60 bg-white shadow-md flex flex-col flex-shrink-0">
             <!-- Logo -->
             <div class="h-16 flex items-center justify-center border-b">
-                <h1 class="text-xl font-bold text-blue-600">文析通</h1>
+                <h1 class="text-xl font-bold text-blue-600">FuckPaper</h1>
             </div>
             
             <!-- 导航菜单 -->
@@ -95,7 +95,7 @@
                     </button>
                     <!-- 用户头像 -->
                     <div class="flex items-center space-x-2">
-                        <span class="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">张</span>
+                        <span class="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">爱因斯坦</span>
                     </div>
                 </div>
             </header>
@@ -191,7 +191,8 @@
                     <div class="text-sm text-gray-500">
                         <button id="backToListBtn" class="text-blue-600 hover:underline">&lt; 返回文献列表</button>
                     </div>
-                    <div class="space-x-2">
+                    <div class="space-x-2 flex flex-wrap gap-2">
+                        <button id="manageImagesBtn" class="flex-shrink-0 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm hover:bg-blue-100">管理图片</button>
                         <button id="detailEditTagsBtn" class="flex-shrink-0 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">编辑标签</button>
                         <button class="flex-shrink-0 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">导出</button>
                         <button id="detailDeleteBtn" class="flex-shrink-0 bg-red-50 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-100">删除</button>
@@ -288,6 +289,7 @@
 
     <!-- [新] 3. 加载中 覆盖层 (之前存在，保持) -->
     <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex-col flex items-center justify-center hidden z-[100]">
+        <img src="/assets/zhanshi.jpg" alt="分析展示图" class="max-w-xs w-full mb-4 rounded-xl shadow-2xl border-4 border-white/30" loading="lazy">
         <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
         <h2 class="text-xl font-semibold text-white">正在分析中...</h2>
         <p class="text-white">这可能需要1-2分钟，请勿关闭页面。</p>
@@ -308,6 +310,27 @@
             </div>
         </div>
     </div>
+
+    <!-- 4. 图片管理 模态窗 -->
+    <div id="imageManagerModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center hidden z-[103]">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl p-6 relative">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h3 class="text-lg font-semibold">管理图片标注</h3>
+                    <p class="text-sm text-gray-500">按照列表顺序自动编号；标记为“子图”会继承上一张图号，封面/忽略不会参与编号。</p>
+                </div>
+                <button id="closeImageManagerBtn" class="text-2xl leading-none text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+            <div id="imageMetadataError" class="text-sm text-red-500 mb-3 hidden"></div>
+            <div id="imageMetadataContainer" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <!-- 图片元数据表单 -->
+            </div>
+            <div class="flex justify-end space-x-2 mt-6">
+                <button class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" onclick="hideImageManagerModal()">取消</button>
+                <button id="saveImageMetadataBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">保存设置</button>
+            </div>
+        </div>
+    </div>
     
     <!-- 5. 图片查看 模态窗 -->
     <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-[102]" onclick="closeModal(this)">
@@ -319,6 +342,8 @@
         // 全局变量
         let apiKey = localStorage.getItem('deepseek_api_key') || '';
         let currentPaperId = null;
+        let imageMetadata = [];
+        let currentFigureData = [];
 
         // DOM 元素
         const importButton = document.getElementById('importButton');
@@ -329,6 +354,12 @@
         const closeApiModalBtn = document.getElementById('closeApiModalBtn');
         const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
         const apiKeyInput = document.getElementById('apiKey');
+        const manageImagesBtn = document.getElementById('manageImagesBtn');
+        const imageManagerModal = document.getElementById('imageManagerModal');
+        const closeImageManagerBtn = document.getElementById('closeImageManagerBtn');
+        const saveImageMetadataBtn = document.getElementById('saveImageMetadataBtn');
+        const imageMetadataContainer = document.getElementById('imageMetadataContainer');
+        const imageMetadataError = document.getElementById('imageMetadataError');
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -364,6 +395,17 @@
             openApiModalBtn.addEventListener('click', showApiModal);
             closeApiModalBtn.addEventListener('click', hideApiModal);
             saveApiKeyBtn.addEventListener('click', saveApiKey);
+
+            // 图片管理模态窗
+            if (manageImagesBtn) {
+                manageImagesBtn.addEventListener('click', openImageManagerModal);
+            }
+            if (closeImageManagerBtn) {
+                closeImageManagerBtn.addEventListener('click', hideImageManagerModal);
+            }
+            if (saveImageMetadataBtn) {
+                saveImageMetadataBtn.addEventListener('click', saveImageMetadata);
+            }
 
             // 设置保存的API密钥
             if (apiKey) {
@@ -402,9 +444,9 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    // 上传成功，刷新文献列表
                     alert('文献导入成功！');
-                    loadLiteratureList();
+                    await loadLiteratureList();
+                    await refreshCurrentPaperDetail();
                 } else {
                     // 上传失败，显示错误信息
                     alert(`导入失败: ${result.error || '未知错误'}`);
@@ -462,6 +504,10 @@
         function renderLiteratureTable(literatureList) {
             const tableBody = document.getElementById('literatureTableBody');
             const noDataRow = document.getElementById('noDataRow');
+            const paginationInfo = document.getElementById('paginationInfo');
+            
+            // 更新分页信息
+            paginationInfo.textContent = `显示 ${literatureList.length} 条, 共 ${literatureList.length} 条记录`;
             
             if (literatureList.length === 0) {
                 noDataRow.classList.remove('hidden');
@@ -523,6 +569,7 @@
                     
                     // 填充文献详情数据
                     fillLiteratureDetail(literatureData);
+                    await loadImageMetadata(paperId);
                 } else {
                     alert(`加载文献详情失败: ${literatureData.error || '未知错误'}`);
                 }
@@ -562,62 +609,356 @@
                 ? shortcomings.map(s => `<p class="mb-2">• ${escapeHtml(s)}</p>`).join('')
                 : '<p class="text-gray-500">无不足信息</p>';
             
-            // 图表 - 修正路径和字段名
-            renderFiguresList(data.内容提取?.关键图表 || []);
+            // 图表数据缓存，后续结合图片元数据渲染
+            currentFigureData = data.内容提取?.关键图表 || [];
+            if (Array.isArray(data.image_metadata)) {
+                imageMetadata = data.image_metadata;
+            }
+            renderFiguresList();
         }
-
-        // 渲染图表列表
-        function renderFiguresList(figures) {
+        // 渲染图表列表（结合图片元数据，仅展示 JSON 中定义的图表）
+        function renderFiguresList() {
             const figuresContainer = document.getElementById('lit-figures-list');
-            
-            if (!figures || figures.length === 0) {
+            if (!figuresContainer) return;
+
+            const textualFigures = currentFigureData || [];
+            if (!textualFigures || textualFigures.length === 0) {
                 figuresContainer.innerHTML = '<p class="text-gray-500">无图表信息</p>';
                 return;
             }
-            
-            figuresContainer.innerHTML = figures.map((figure, index) => {
-                // 根据图序号提取图片文件名（例如："图1" -> "fig1"）
-                const figureNumber = figure.图序号 ? figure.图序号.replace('图', '') : (index + 1).toString();
-                
-                // 尝试多种可能的图片格式
-                const imageFormats = ['png', 'jpeg', 'jpg'];
-                let imageElements = '';
-                
-                // 为每种格式创建图片元素
-                imageFormats.forEach((format, formatIndex) => {
-                    const isFirst = formatIndex === 0;
-                    imageElements += `
-                    <img src="/api/literature/${currentPaperId}/images/fig${figureNumber}.${format}" 
-                         alt="${figure.图序号 || `图${index + 1}`}" 
-                         class="w-full h-full object-cover cursor-pointer hover:opacity-80 ${!isFirst ? 'hidden' : ''}"
-                         onerror="${formatIndex < imageFormats.length - 1 ? `this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');` : `this.style.display='none'; document.getElementById('no-image-${index}').style.display='flex';`}"
-                         onclick="openImageModal('/api/literature/${currentPaperId}/images/fig${figureNumber}.${format}')">
-                    `;
-                });
-                
+
+            figuresContainer.innerHTML = textualFigures.map((figure, index) => renderFigureCard(figure, index)).join('');
+        }
+
+        async function refreshCurrentPaperDetail() {
+            if (!currentPaperId) return;
+            try {
+                const response = await fetch(`/api/literature/${currentPaperId}`);
+                const literatureData = await response.json();
+                if (response.ok) {
+                    fillLiteratureDetail(literatureData);
+                    if (Array.isArray(literatureData.image_metadata)) {
+                        imageMetadata = literatureData.image_metadata;
+                        renderFiguresList();
+                    } else {
+                        await loadImageMetadata(currentPaperId);
+                    }
+                }
+            } catch (error) {
+                console.error('刷新文献详情失败:', error);
+            }
+        }
+
+        // 图片元数据管理
+        async function loadImageMetadata(paperId) {
+            imageMetadata = [];
+            renderFiguresList();
+            if (!paperId) return;
+
+            try {
+                const response = await fetch(`/api/literature/${paperId}/images/metadata`);
+                const result = await response.json();
+                if (response.ok) {
+                    imageMetadata = result.metadata || [];
+                    renderFiguresList();
+                } else {
+                    console.error('加载图片元数据失败:', result.error);
+                }
+            } catch (error) {
+                console.error('加载图片元数据失败:', error);
+            }
+        }
+
+        function openImageManagerModal() {
+            if (!currentPaperId) {
+                alert('请先选择文献');
+                return;
+            }
+            if (!imageMetadata || imageMetadata.length === 0) {
+                alert('当前文献没有可管理的图片');
+                return;
+            }
+            renderImageManagerForm();
+            if (imageMetadataError) {
+                imageMetadataError.classList.add('hidden');
+                imageMetadataError.textContent = '';
+            }
+            imageManagerModal?.classList.remove('hidden');
+        }
+
+        function hideImageManagerModal() {
+            imageManagerModal?.classList.add('hidden');
+        }
+
+        function renderImageManagerForm() {
+            if (!imageMetadataContainer) return;
+            if (!imageMetadata || imageMetadata.length === 0) {
+                imageMetadataContainer.innerHTML = '<p class="text-gray-500">暂无图片</p>';
+                return;
+            }
+
+            const categoryOptions = [
+                { value: 'figure', label: '普通图' },
+                { value: 'subfigure', label: '子图 (同一图内)' },
+                { value: 'cover', label: '封面' },
+                { value: 'ignore', label: '忽略' }
+            ];
+
+            imageMetadataContainer.innerHTML = imageMetadata.map((item, index) => {
+                const imageSrc = `/api/literature/${currentPaperId}/images/${encodeURIComponent(item.filename)}`;
+                const optionsHtml = categoryOptions.map(opt => `
+                    <option value="${opt.value}" ${item.category === opt.value ? 'selected' : ''}>${opt.label}</option>
+                `).join('');
+
                 return `
-                <div class="border rounded-lg p-4">
-                    <div class="flex items-start space-x-4">
-                        <div class="flex-shrink-0 w-48 h-32 bg-gray-100 rounded-lg overflow-hidden">
-                            ${imageElements}
-                            <div id="no-image-${index}" class="w-full h-full flex items-center justify-center text-gray-400 hidden">
-                                无图片
-                            </div>
+                <div class="border rounded-lg p-4 flex flex-col md:flex-row gap-4" data-image-row="${index}">
+                    <div class="w-full md:w-32 flex-shrink-0">
+                        <img src="${imageSrc}" alt="${escapeHtml(item.filename)}" class="w-32 h-32 object-cover rounded-lg border" onerror="this.style.display='none';">
+                    </div>
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">文件名</label>
+                            <p class="text-sm text-gray-700 break-all">${escapeHtml(item.filename)}</p>
                         </div>
-                        <div class="flex-1">
-                            <h4 class="font-semibold text-lg mb-2">${escapeHtml(figure.图序号 || `图${index + 1}`)}</h4>
-                            <p class="text-gray-700 leading-relaxed">${escapeHtml(figure.核心内容 || '无描述')}</p>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">图号</label>
+                            <input type="text" data-image-field="figure_id" value="${item.figure_id || ''}" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">标签/描述</label>
+                            <input type="text" data-image-field="label" value="${item.label || ''}" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">类别</label>
+                            <select data-image-field="category" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            bindMetadataFieldEvents();
+        }
+
+        function bindMetadataFieldEvents() {
+            if (!imageMetadataContainer) return;
+            imageMetadataContainer.querySelectorAll('select[data-image-field="category"]').forEach(select => {
+                select.addEventListener('change', handleImageCategoryChange);
+                handleImageCategoryChange({ target: select });
+            });
+        }
+
+        function handleImageCategoryChange(event) {
+            const select = event.target;
+            const row = select.closest('[data-image-row]');
+            if (!row) return;
+            const figureInput = row.querySelector('[data-image-field="figure_id"]');
+            if (!figureInput) return;
+            const disable = ['cover', 'ignore', 'subfigure'].includes(select.value);
+            figureInput.disabled = disable;
+            figureInput.classList.toggle('bg-gray-100', disable);
+            if (disable) {
+                if (select.value === 'cover') {
+                    figureInput.value = '';
+                } else if (select.value === 'ignore') {
+                    figureInput.value = '';
+                } else if (select.value === 'subfigure') {
+                    figureInput.value = '';
+                    figureInput.placeholder = '继承上一图号';
+                }
+            } else {
+                figureInput.placeholder = '';
+            }
+        }
+
+        function collectImageMetadataFromForm() {
+            if (!imageMetadataContainer || !imageMetadata || imageMetadata.length === 0) {
+                return [];
+            }
+
+            const raw = imageMetadata.map((item, index) => {
+                const row = imageMetadataContainer.querySelector(`[data-image-row="${index}"]`);
+                if (!row) return { ...item };
+                const figureInput = row.querySelector('[data-image-field="figure_id"]');
+                const labelInput = row.querySelector('[data-image-field="label"]');
+                const categorySelect = row.querySelector('select[data-image-field="category"]');
+
+                return {
+                    filename: item.filename,
+                    figure_id: figureInput ? figureInput.value.trim() : '',
+                    label: labelInput ? labelInput.value.trim() : '',
+                    category: categorySelect ? categorySelect.value : 'figure'
+                };
+            });
+
+            return enforceSequentialFigureIds(raw);
+        }
+
+        async function saveImageMetadata() {
+            if (!currentPaperId) return;
+            const payload = collectImageMetadataFromForm();
+            if (imageMetadataError) {
+                imageMetadataError.classList.add('hidden');
+                imageMetadataError.textContent = '';
+            }
+
+            try {
+                if (saveImageMetadataBtn) {
+                    saveImageMetadataBtn.disabled = true;
+                }
+
+                const response = await fetch(`/api/literature/${currentPaperId}/images/metadata`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ metadata: payload })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    imageMetadata = result.metadata || [];
+                    renderFiguresList();
+                    hideImageManagerModal();
+                    await loadLiteratureList();
+                    await refreshCurrentPaperDetail();
+                    alert('图片信息已更新');
+                } else if (imageMetadataError) {
+                    imageMetadataError.textContent = result.error || '保存失败';
+                    imageMetadataError.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('保存图片元数据失败:', error);
+                if (imageMetadataError) {
+                    imageMetadataError.textContent = '保存失败，请检查网络连接';
+                    imageMetadataError.classList.remove('hidden');
+                }
+            } finally {
+                if (saveImageMetadataBtn) {
+                    saveImageMetadataBtn.disabled = false;
+                }
+            }
+        }
+
+        function renderFigureCard(figure, index) {
+            const heading = figure.图序号 || `图${index + 1}`;
+            const description = figure.核心内容 || '无描述';
+            const typeInfo = figure.图表类型 || '';
+            const supportInfo = figure.支撑结论 || '';
+
+            const imageSection = buildFigureImages(figure, index);
+
+            return `
+                <div class="border rounded-lg p-4">
+                    <div class="flex items-start flex-wrap gap-4">
+                        ${imageSection}
+                        <div class="flex-1 min-w-[220px]">
+                            <h4 class="font-semibold text-lg mb-2">${escapeHtml(heading)}</h4>
+                            <p class="text-gray-700 leading-relaxed">${escapeHtml(description)}</p>
                             <div class="mt-2 text-sm text-gray-600">
-                                <strong>图表类型:</strong> ${escapeHtml(figure.图表类型 || '未知')}
+                                <strong>图表类型:</strong> ${escapeHtml(typeInfo || '未知')}
                             </div>
                             <div class="mt-1 text-sm text-gray-600">
-                                <strong>支撑结论:</strong> ${escapeHtml(figure.支撑结论 || '无')}
+                                <strong>支撑结论:</strong> ${escapeHtml(supportInfo || '暂无')}
                             </div>
                         </div>
                     </div>
                 </div>
+            `;
+        }
+
+        function buildFigureImages(figure, index) {
+            const matches = getMetadataMatchesForFigure(figure);
+            if (matches.length > 0) {
+                const imagesHtml = matches.map(item => {
+                    const src = `/api/literature/${currentPaperId}/images/${encodeURIComponent(item.filename)}`;
+                    return `
+                        <div class="w-32 h-32 rounded-lg overflow-hidden border">
+                            <img src="${src}" alt="${escapeHtml(item.label || item.filename)}"
+                                 class="w-full h-full object-cover cursor-pointer hover:opacity-80"
+                                 onclick="openImageModal('${src}')">
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="flex flex-wrap gap-3">
+                        ${imagesHtml}
+                    </div>
+                `;
+            }
+
+            // 回退到默认命名的图片资源
+            const fallbackId = (figure.图序号 || `图${index + 1}`).replace(/[^0-9a-zA-Z]/g, '') || (index + 1).toString();
+            const formats = ['png', 'jpeg', 'jpg'];
+            const fallbackImages = formats.map((format, formatIndex) => {
+                const src = `/api/literature/${currentPaperId}/images/fig${fallbackId}.${format}`;
+                const isFirst = formatIndex === 0;
+                return `
+                    <img src="${src}"
+                         alt="${escapeHtml(figure.图序号 || `图${index + 1}`)}"
+                         class="w-full h-full object-cover cursor-pointer hover:opacity-80 ${!isFirst ? 'hidden' : ''}"
+                         onerror="${formatIndex < formats.length - 1 ? `this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');` : `this.style.display='none'; document.getElementById('no-image-${index}').style.display='flex';`}"
+                         onclick="openImageModal('${src}')">
                 `;
             }).join('');
+
+            return `
+                <div class="flex-shrink-0 w-48 h-32 bg-gray-100 rounded-lg overflow-hidden">
+                    ${fallbackImages}
+                    <div id="no-image-${index}" class="w-full h-full flex items-center justify-center text-gray-400 hidden">
+                        无图片
+                    </div>
+                </div>
+            `;
+        }
+
+        function getMetadataMatchesForFigure(figure) {
+            const normalized = normalizeFigureId(figure?.图序号);
+            if (!normalized) return [];
+            return (imageMetadata || []).filter(item => {
+                if (!item || !item.figure_id) return false;
+                if (item.category === 'cover' || item.category === 'ignore') return false;
+                return normalizeFigureId(item.figure_id) === normalized;
+            });
+        }
+
+        function normalizeFigureId(value) {
+            if (!value) return '';
+            return value
+                .toString()
+                .replace(/图|fig|figure|图表/gi, '')
+                .replace(/[^a-zA-Z0-9]/g, '')
+                .toLowerCase();
+        }
+
+        function enforceSequentialFigureIds(list) {
+            let nextFigureNumber = 1;
+            let currentGroupId = '';
+
+            return list.map(item => {
+                const normalized = { ...item };
+                const category = normalized.category || 'figure';
+
+                if (category === 'cover' || category === 'ignore') {
+                    normalized.figure_id = '';
+                    currentGroupId = '';
+                    return normalized;
+                }
+
+                if (category === 'subfigure') {
+                    if (!currentGroupId) {
+                        currentGroupId = String(nextFigureNumber);
+                        nextFigureNumber += 1;
+                    }
+                    normalized.figure_id = currentGroupId;
+                    return normalized;
+                }
+
+                normalized.figure_id = String(nextFigureNumber);
+                currentGroupId = normalized.figure_id;
+                nextFigureNumber += 1;
+                return normalized;
+            });
         }
 
         // 打开图片模态窗
@@ -627,24 +968,32 @@
         }
 
         // 删除文献
-        function deleteLiterature(paperId) {
-            if (confirm('确定要删除这篇文献吗？')) {
-                fetch(`/api/literature/${paperId}`, {
+        async function deleteLiterature(paperId) {
+            const confirmed = confirm('确定要删除这篇文献吗？');
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/api/literature/${paperId}`, {
                     method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        alert('文献已删除');
-                        loadLiteratureList();
-                    } else {
-                        alert('删除失败: ' + (result.error || '未知错误'));
-                    }
-                })
-                .catch(error => {
-                    console.error('删除失败:', error);
-                    alert('删除失败，请检查网络连接');
                 });
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('文献已删除');
+                    await loadLiteratureList();
+                    if (currentPaperId === paperId) {
+                        currentPaperId = null;
+                        document.getElementById('detailView').classList.add('hidden');
+                        document.getElementById('listView').classList.remove('hidden');
+                    } else {
+                        await refreshCurrentPaperDetail();
+                    }
+                } else {
+                    alert('删除失败: ' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败，请检查网络连接');
             }
         }
 

@@ -1,0 +1,170 @@
+{
+  "文献信息": {
+    "标题": "Automated quantitative diagnosis of GaAs solar cells using the CBAM-MS-1DCNN model on absolute electroluminescence imaging and distributed circuit modeling",
+    "作者": [
+      "Wenjie Zhou",
+      "Panpan Yang",
+      "Youyang Wang",
+      "Mang Zha",
+      "Deyang Qin",
+      "Qiao Huang",
+      "Guoen Weng",
+      "Xiaobo Hu",
+      "Hidefumi Akiyama",
+      "Junhao Chu",
+      "Shaogiang Chen"
+    ],
+    "期刊": "Applied Optics",
+    "年份": "2025"
+  },
+  "内容提取": {
+    "摘要": "提出了一种基于绝对电致发光成像和分布式电路建模的GaAs太阳能电池自动化定量缺陷诊断方法，采用CBAM-MS-1DCNN模型快速诊断暗点缺陷的局部串联电阻。",
+    "关键图表": [
+      {
+        "图序号": "图4",
+        "图表类型": "对比图",
+        "核心内容": "实验测量与模拟的绝对EL图像、平均EL强度和J-V特性曲线对比",
+        "支撑结论": "模拟模型能够准确再现实际太阳能电池的电学和光学特性"
+      },
+      {
+        "图序号": "图5",
+        "图表类型": "分析图",
+        "核心内容": "不同RS-MC值和不同位置缺陷对归一化绝对EL强度及其损失率的影响",
+        "支撑结论": "RS-MC与绝对EL强度及其损失率存在强相关性，缺陷位置对诊断结果有重要影响"
+      },
+      {
+        "图序号": "图8",
+        "图表类型": "性能曲线",
+        "核心内容": "CBAM-MS-1DCNN模型的训练过程和不同模型的NRMSE与R2对比",
+        "支撑结论": "CBAM-MS-1DCNN模型在测试集上达到NRMSE 1.58%和R2 0.9914的最佳性能"
+      },
+      {
+        "图序号": "图10",
+        "图表类型": "预测结果图",
+        "核心内容": "实际GaAs太阳能电池的EL图像预处理、RS-MC预测图和相对误差分布",
+        "支撑结论": "模型对实际样品具有良好的预测性能，大多数像素区域的相对误差在±10%以内"
+      }
+    ],
+    "实验": [
+      "实验方法：使用工业级GaAs太阳能电池，在暗箱中通过CCD相机采集绝对EL图像，结合SPICE软件建立分布式等效电路模型",
+      "实验设置：构建包含250个模拟模型、20万个缺陷的数据集，80%用于训练，20%用于测试"
+    ],
+    "结论": [
+      "CBAM-MS-1DCNN模型在测试集上达到NRMSE 1.58%和R2 0.9914的优异性能",
+      "模型对实际GaAs太阳能电池的预测绝对EL强度相对误差可控制在10%以内，证明了方法的实用性和普适性"
+    ],
+    "创新点": [
+      "首次将CBAM注意力机制与多尺度1DCNN结合用于太阳能电池缺陷诊断",
+      "通过模拟数据集解决了EL图像数据集稀缺的问题，实现了从模拟到实际应用的迁移"
+    ],
+    "不足": [
+      "模拟模型与实际太阳能电池存在差异，影响缺陷损失率计算精度",
+      "当前模型无法反映太阳能电池表面的栅极电极",
+      "仅限于GaAs太阳能电池，对其他光伏技术的适应性有待验证"
+    ]
+  },
+  "paper_id": "beafa8ba-b8e9-43cd-b7ea-43f4bb175818",
+  "image_files": [
+    "fig1.png",
+    "fig2.jpeg",
+    "fig3.jpeg",
+    "fig4.jpeg",
+    "fig5.jpeg",
+    "fig6.jpeg",
+    "fig7.png",
+    "fig8.jpeg",
+    "fig9.png",
+    "fig10.jpeg",
+    "fig11.png",
+    "fig12.jpeg",
+    "fig13.png",
+    "fig14.png"
+  ],
+  "custom_tags": [],
+  "image_metadata": [
+    {
+      "filename": "fig1.png",
+      "figure_id": "",
+      "label": "",
+      "category": "cover"
+    },
+    {
+      "filename": "fig2.jpeg",
+      "figure_id": "",
+      "label": "",
+      "category": "ignore"
+    },
+    {
+      "filename": "fig3.jpeg",
+      "figure_id": "1",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig4.jpeg",
+      "figure_id": "2",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig5.jpeg",
+      "figure_id": "3",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig6.jpeg",
+      "figure_id": "4",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig7.png",
+      "figure_id": "5",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig8.jpeg",
+      "figure_id": "6",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig9.png",
+      "figure_id": "7",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig10.jpeg",
+      "figure_id": "8",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig11.png",
+      "figure_id": "9",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig12.jpeg",
+      "figure_id": "10",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig13.png",
+      "figure_id": "11",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig14.png",
+      "figure_id": "12",
+      "label": "",
+      "category": "figure"
+    }
+  ]
+}
