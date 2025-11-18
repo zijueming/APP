@@ -98,6 +98,20 @@ def update_image_metadata(paper_id):
     return _execute(operation)
 
 
+@literature_bp.route("/api/literature/<paper_id>/reading-time", methods=["PUT"])
+def update_reading_time(paper_id):
+    payload = request.json or {}
+    new_time = payload.get("reading_time")
+    if not new_time:
+        return jsonify({"error": "Missing 'reading_time' in request body"}), 400
+
+    def operation():
+        result = service.update_reading_time(paper_id, new_time)
+        return {"success": True, **result}
+
+    return _execute(operation)
+
+
 @literature_bp.route("/api/literature/<paper_id>/images/<filename>")
 def serve_image(paper_id, filename):
     try:

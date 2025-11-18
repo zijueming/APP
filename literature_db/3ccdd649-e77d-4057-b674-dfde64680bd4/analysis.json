@@ -81,5 +81,55 @@
     "fig6.jpeg",
     "fig7.jpeg",
     "fig8.png"
+  ],
+  "image_metadata": [
+    {
+      "filename": "fig1.jpeg",
+      "figure_id": "1",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig2.jpeg",
+      "figure_id": "2",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig3.jpeg",
+      "figure_id": "3",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig4.jpeg",
+      "figure_id": "4",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig5.jpeg",
+      "figure_id": "5",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig6.jpeg",
+      "figure_id": "6",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig7.jpeg",
+      "figure_id": "7",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig8.png",
+      "figure_id": "8",
+      "label": "",
+      "category": "figure"
+    }
   ]
 }

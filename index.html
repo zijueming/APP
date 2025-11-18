@@ -153,6 +153,7 @@
                                 <th class="p-4 w-12"><input type="checkbox"></th>
                                 <th class="p-4">标题</th>
                                 <th class="p-4 w-40">作者</th>
+                                <th class="p-4 w-36">阅读时间</th>
                                 <th class="p-4 w-24">年份</th>
                                 <th class="p-4 w-48">自定义标签</th>
                                 <th class="p-4 w-32">操作</th>
@@ -206,6 +207,16 @@
                     <p class="text-sm text-gray-500">
                         <span id="lit-journal"></span>, <span id="lit-year"></span>
                     </p>
+                </div>
+                <div class="flex items-center gap-3 text-sm text-gray-600 mb-2">
+                    <span class="font-medium">阅读时间:</span>
+                    <span id="readingTimeDisplay" class="text-gray-800">-</span>
+                    <button id="editReadingTimeBtn" class="text-blue-600 hover:underline text-xs">编辑</button>
+                </div>
+                <div id="readingTimeEditor" class="hidden flex items-center gap-2 text-sm text-gray-600 mb-4">
+                    <input id="readingTimeInput" type="datetime-local" class="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <button id="saveReadingTimeBtn" class="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700">保存</button>
+                    <button id="cancelReadingTimeBtn" class="text-gray-600 px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">取消</button>
                 </div>
 
                 <!-- [修改] 移除 Tab 导航 -->
@@ -344,6 +355,7 @@
         let currentPaperId = null;
         let imageMetadata = [];
         let currentFigureData = [];
+        let currentReadingTime = '';
 
         // DOM 元素
         const importButton = document.getElementById('importButton');
@@ -360,6 +372,12 @@
         const saveImageMetadataBtn = document.getElementById('saveImageMetadataBtn');
         const imageMetadataContainer = document.getElementById('imageMetadataContainer');
         const imageMetadataError = document.getElementById('imageMetadataError');
+        const editReadingTimeBtn = document.getElementById('editReadingTimeBtn');
+        const readingTimeDisplay = document.getElementById('readingTimeDisplay');
+        const readingTimeEditor = document.getElementById('readingTimeEditor');
+        const readingTimeInput = document.getElementById('readingTimeInput');
+        const saveReadingTimeBtn = document.getElementById('saveReadingTimeBtn');
+        const cancelReadingTimeBtn = document.getElementById('cancelReadingTimeBtn');
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -405,6 +423,20 @@
             }
             if (saveImageMetadataBtn) {
                 saveImageMetadataBtn.addEventListener('click', saveImageMetadata);
+            }
+            if (editReadingTimeBtn) {
+                editReadingTimeBtn.addEventListener('click', () => {
+                    showReadingTimeEditor();
+                    if (readingTimeInput) {
+                        readingTimeInput.value = toLocalInputValue(currentReadingTime);
+                    }
+                });
+            }
+            if (saveReadingTimeBtn) {
+                saveReadingTimeBtn.addEventListener('click', updateReadingTime);
+            }
+            if (cancelReadingTimeBtn) {
+                cancelReadingTimeBtn.addEventListener('click', hideReadingTimeEditor);
             }
 
             // 设置保存的API密钥
@@ -525,6 +557,7 @@
                         <div class="font-medium">${escapeHtml(item.title || '无标题')}</div>
                     </td>
                     <td class="p-4">${escapeHtml((item.authors || []).join(', ') || '未知作者')}</td>
+                    <td class="p-4 text-sm text-gray-600">${formatReadingTime(item.reading_time || item.upload_time)}</td>
                     <td class="p-4">${escapeHtml(item.year || '未知年份')}</td>
                     <td class="p-4">
                         <div class="flex flex-wrap gap-1">
@@ -614,6 +647,8 @@
             if (Array.isArray(data.image_metadata)) {
                 imageMetadata = data.image_metadata;
             }
+            currentReadingTime = data.reading_time || data.upload_time || '';
+            updateReadingTimeDisplay(currentReadingTime);
             renderFiguresList();
         }
         // 渲染图表列表（结合图片元数据，仅展示 JSON 中定义的图表）
@@ -835,6 +870,100 @@
             } finally {
                 if (saveImageMetadataBtn) {
                     saveImageMetadataBtn.disabled = false;
+                }
+            }
+        }
+
+        function updateReadingTimeDisplay(value) {
+            currentReadingTime = value || '';
+            if (readingTimeDisplay) {
+                readingTimeDisplay.textContent = formatReadingTime(value);
+            }
+        }
+
+        function formatReadingTime(value) {
+            if (!value) {
+                return '未设置';
+            }
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return '格式错误';
+            }
+            return date.toLocaleString('zh-CN');
+        }
+
+        function toLocalInputValue(value) {
+            if (!value) {
+                return '';
+            }
+
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+
+            const tzOffset = date.getTimezoneOffset();
+            const localDate = new Date(date.getTime() - tzOffset * 60000);
+            return localDate.toISOString().slice(0, 16);
+        }
+
+        function showReadingTimeEditor() {
+            if (readingTimeEditor) {
+                readingTimeEditor.classList.remove('hidden');
+            }
+            if (readingTimeInput) {
+                readingTimeInput.value = toLocalInputValue(currentReadingTime);
+            }
+        }
+
+        function hideReadingTimeEditor() {
+            if (readingTimeEditor) {
+                readingTimeEditor.classList.add('hidden');
+            }
+        }
+
+        async function updateReadingTime() {
+            if (!currentPaperId) {
+                alert('请先选择文献');
+                return;
+            }
+            if (!readingTimeInput || !readingTimeInput.value) {
+                alert('请选择阅读时间');
+                return;
+            }
+
+            const isoValue = new Date(readingTimeInput.value).toISOString();
+
+            try {
+                if (saveReadingTimeBtn) {
+                    saveReadingTimeBtn.disabled = true;
+                }
+
+                const response = await fetch(`/api/literature/${currentPaperId}/reading-time`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reading_time: isoValue })
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    const newTime = result.reading_time || isoValue;
+                    updateReadingTimeDisplay(newTime);
+                    hideReadingTimeEditor();
+                    await loadLiteratureList();
+                    await refreshCurrentPaperDetail();
+                } else {
+                    throw new Error(result.error || '更新失败');
+                }
+            } catch (error) {
+                console.error('更新阅读时间失败:', error);
+                alert('阅读时间更新失败，请重试');
+            } finally {
+                if (saveReadingTimeBtn) {
+                    saveReadingTimeBtn.disabled = false;
                 }
             }
         }

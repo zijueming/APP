@@ -96,6 +96,9 @@ def get_all_literature_summaries() -> List[Dict]:
                 "authors": data.get("文献信息", {}).get("作者", []),
                 "year": data.get("文献信息", {}).get("年份", ""),
                 "custom_tags": data.get("custom_tags", []) # [新]
+            ,
+                "reading_time": data.get("reading_time"),
+                "upload_time": data.get("upload_time")
             }
             summaries.append(summary)
             
@@ -208,6 +211,14 @@ def update_image_metadata(paper_id: str, metadata: List[Dict]) -> List[Dict]:
         
     updated_data = _mutate_analysis_file(paper_id, _update)
     return updated_data.get('image_metadata', [])
+
+def update_reading_time(paper_id: str, reading_time: str) -> str:
+    def _update(data):
+        data['reading_time'] = reading_time
+        return data
+
+    updated_data = _mutate_analysis_file(paper_id, _update)
+    return updated_data.get('reading_time', '')
 
 
 def get_all_tags() -> List[str]:

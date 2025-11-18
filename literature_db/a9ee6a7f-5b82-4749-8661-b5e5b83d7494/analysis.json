@@ -1,0 +1,157 @@
+{
+  "文献信息": {
+    "标题": "Absolute electroluminescence imaging with distributed circuit modeling: Excellent for solar-cell defect diagnosis",
+    "作者": [
+      "Jianyu Hong",
+      "Youyang Wang",
+      "Yuanjing Chen",
+      "Xiaobo Hu",
+      "Guoen Weng",
+      "Shaoqiang Chen",
+      "Hidefumi Akiyama",
+      "Yingbin Zhang",
+      "Bo Zhang",
+      "Junhao Chu"
+    ],
+    "期刊": "Progress in Photovoltaics: Research and Applications",
+    "年份": "2019"
+  },
+  "内容提取": {
+    "摘要": "提出了一种结合绝对电致发光成像和二维分布式电路建模的方法，用于太阳能电池电学缺陷的定量诊断，通过分析不同注入电流下缺陷点的EL强度变化来识别缺陷类型。",
+    "关键图表": [
+      {
+        "图序号": "图1",
+        "图表类型": "示意图",
+        "核心内容": "太阳能电池绝对电致发光测量的实验装置示意图",
+        "支撑结论": "展示了实验设置的完整性和测量方法的可靠性"
+      },
+      {
+        "图序号": "图2",
+        "图表类型": "电路图",
+        "核心内容": "太阳能电池的二维分布式等效电路模型，包含透明导电氧化物接触层、吸收层和背接触层",
+        "支撑结论": "为数值模拟提供了理论基础，能够准确描述太阳能电池的电学特性"
+      },
+      {
+        "图序号": "图3",
+        "图表类型": "图像对比",
+        "核心内容": "Si和GaAs太阳能电池在20 mA/cm²注入电流密度下的实测和模拟绝对EL图像对比",
+        "支撑结论": "验证了SPICE模型在EL强度分布模拟中的可行性"
+      },
+      {
+        "图序号": "图8",
+        "图表类型": "曲线图",
+        "核心内容": "不同太阳能电池缺陷点的注入电流依赖EL强度损失/增益率实验与模拟结果对比",
+        "支撑结论": "证明了不同缺陷类型（串联电阻增加或并联电阻减小）具有不同的电流依赖特性"
+      }
+    ],
+    "实验": [
+      "实验方法：使用CCD相机测量Si、GaAs和CIGS三种太阳能电池在不同正向偏置下的绝对EL图像，结合二维分布式SPICE模型进行数值模拟",
+      "实验设置：室温下通过电流-电压源注入正向电流，使用标准平面LED校准绝对EL图像"
+    ],
+    "结论": [
+      "Si和CIGS电池中的暗点缺陷主要由并联电阻减小引起，GaAs电池中的暗点缺陷主要由串联电阻增加引起，CIGS电池中的亮点缺陷由串联电阻减小引起",
+      "与传统平均化表征技术相比，该方法能够提供空间分辨的定量电学缺陷诊断"
+    ],
+    "创新点": [
+      "首次将绝对EL成像与二维分布式电路建模相结合，实现太阳能电池电学缺陷的定量诊断",
+      "通过分析缺陷点EL强度的注入电流依赖性来识别缺陷类型，为缺陷分类提供了新方法"
+    ],
+    "不足": [
+      "校准过程存在不确定性（小于10%），可能影响测量精度",
+      "模型参数需要根据实验数据进行调整，存在一定的主观性",
+      "未考虑温度变化对缺陷行为的影响"
+    ]
+  },
+  "paper_id": "a9ee6a7f-5b82-4749-8661-b5e5b83d7494",
+  "image_files": [
+    "fig1.png",
+    "fig2.png",
+    "fig3.png",
+    "fig4.png",
+    "fig5.png",
+    "fig6.png",
+    "fig7.png",
+    "fig8.png",
+    "fig9.png",
+    "fig10.png",
+    "fig11.png",
+    "fig12.png"
+  ],
+  "reading_time": "2025-11-18T15:14:49.908292+00:00",
+  "upload_time": "2025-11-18T15:14:49.908292+00:00",
+  "custom_tags": [],
+  "image_metadata": [
+    {
+      "filename": "fig1.png",
+      "figure_id": "",
+      "label": "",
+      "category": "ignore"
+    },
+    {
+      "filename": "fig2.png",
+      "figure_id": "",
+      "label": "",
+      "category": "ignore"
+    },
+    {
+      "filename": "fig3.png",
+      "figure_id": "1",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig4.png",
+      "figure_id": "2",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig5.png",
+      "figure_id": "3",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig6.png",
+      "figure_id": "4",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig7.png",
+      "figure_id": "5",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig8.png",
+      "figure_id": "6",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig9.png",
+      "figure_id": "7",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig10.png",
+      "figure_id": "8",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig11.png",
+      "figure_id": "9",
+      "label": "",
+      "category": "figure"
+    },
+    {
+      "filename": "fig12.png",
+      "figure_id": "10",
+      "label": "",
+      "category": "figure"
+    }
+  ]
+}

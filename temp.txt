@@ -1,0 +1,20 @@
+import os
+import json
+import logging
+import shutil # 用于删除文件�?
+from typing import Callable, Dict, List, Optional, Set
+
+# --- 1. 配置 ---
+
+# 我们的“数据库”就是一个文件夹
+DB_BASE_PATH = "literature_db"
+ANALYSIS_FILE_NAME = "analysis.json"
+PDF_FILE_NAME = "original.pdf"
+
+# --- 2. 基础数据库操�?---
+
+def setup_database():
+    """
+    确保数据库文件夹存在
+    """
+    if not os.path.exists(DB_BASE_PATH):

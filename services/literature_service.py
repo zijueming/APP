@@ -5,6 +5,7 @@ import os
 import tempfile
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Tuple
 
 from werkzeug.datastructures import FileStorage
@@ -143,10 +144,12 @@ class LiteratureService:
             paper_dir = self.repository.get_paper_dir(paper_id)
             image_files = self.analyzer.extract_images_from_pdf(tmp_pdf_path, paper_dir)
 
+            reading_time = self._current_timestamp()
             analysis_payload = self._enrich_analysis_payload(
                 analysis_result,
                 paper_id,
                 image_files,
+                reading_time=reading_time,
             )
 
             self.repository.save_new_literature(paper_id, tmp_pdf_path, analysis_payload)
@@ -186,10 +189,13 @@ class LiteratureService:
         analysis_data: Dict[str, Any],
         paper_id: str,
         image_files: list[str],
+        reading_time: str,
     ) -> Dict[str, Any]:
         analysis_data = dict(analysis_data)
         analysis_data["paper_id"] = paper_id
         analysis_data["image_files"] = image_files
+        analysis_data["reading_time"] = reading_time
+        analysis_data["upload_time"] = analysis_data.get("upload_time") or reading_time
 
         custom_tags = analysis_data.get("custom_tags")
         if not isinstance(custom_tags, list):
@@ -210,7 +216,30 @@ class LiteratureService:
             "authors": meta.get("作者", []),
             "year": meta.get("年份", ""),
             "custom_tags": analysis_payload.get("custom_tags", []),
+            "reading_time": analysis_payload.get("reading_time"),
+            "upload_time": analysis_payload.get("upload_time"),
         }
+
+    def update_reading_time(self, paper_id: str, reading_time: str):
+        normalized = self._normalize_reading_time(reading_time)
+        self.repository.update_reading_time(paper_id, normalized)
+        return {"reading_time": normalized}
+
+    def _normalize_reading_time(self, value: str) -> str:
+        if not value:
+            raise InvalidUploadError("Missing reading_time")
+        normalized = value.strip()
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            raise InvalidUploadError("reading_time must be ISO format")
+        utc = parsed.astimezone(timezone.utc)
+        return utc.isoformat()
+
+    def _current_timestamp(self) -> str:
+        return datetime.now(timezone.utc).isoformat()
 
     # ------------------------------------------------------------------ #
     # Image metadata helpers
