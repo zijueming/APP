@@ -75,13 +75,21 @@
 
         <nav class="flex-1 py-6 px-3 space-y-1">
             <a href="#" id="nav-home"
-                class="flex items-center px-3 py-2.5 rounded-lg bg-blue-600 text-white group transition-all shadow-lg shadow-blue-900/20">
+                class="flex items-center px-3 py-2.5 rounded-lg text-slate-200 hover:bg-slate-800/60 hover:text-white group transition-all">
                 <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
                     </path>
                 </svg>
                 文献库
+            </a>
+            <a href="#" id="nav-tags"
+                class="flex items-center px-3 py-2.5 rounded-lg text-slate-200 hover:bg-slate-800/60 hover:text-white group transition-all">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 7h10M7 12h8m-8 5h6"></path>
+                </svg>
+                标签管理
             </a>
         </nav>
 
@@ -212,6 +220,67 @@
                 </div>
             </div>
 
+            <!-- Tag Management View -->
+            <div id="tagView" class="hidden max-w-6xl mx-auto space-y-4 fade-in">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">标签管理</h2>
+                        <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold"
+                            id="tagCountBadge">0</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-64">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input type="text" id="tagSearchInput"
+                                class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                placeholder="搜索标签...">
+                        </div>
+                        <button id="refreshTagsBtn"
+                            class="px-4 py-2 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                            刷新
+                        </button>
+                        <button id="backToLibraryBtn"
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors">
+                            返回文献
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-slate-100">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">全局标签列表</p>
+                            <p class="text-xs text-slate-500 mt-1">重命名或删除标签会同步到所有文献</p>
+                        </div>
+                        <p id="tagManageMessage" class="text-sm text-amber-600 hidden"></p>
+                    </div>
+                    <div class="overflow-hidden">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                        标签</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-32">
+                                        使用次数</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-40">
+                                        操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tagTableBody" class="bg-white divide-y divide-slate-200">
+                                <!-- Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="tagEmptyState" class="hidden px-6 py-10 text-center text-slate-500 text-sm border-t border-slate-100">
+                        暂无标签，先给文献添加一些标签吧。
+                    </div>
+                </div>
+            </div>
+
             <!-- Detail View -->
             <div id="detailView" class="hidden max-w-7xl mx-auto h-full flex flex-col fade-in">
                 <!-- Detail Header -->
@@ -270,6 +339,27 @@
                             <div class="flex flex-wrap gap-2 relative z-10" id="lit-tags-container">
                                 <!-- Tags -->
                             </div>
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mt-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">标签管理</p>
+                                        <p class="text-xs text-slate-500">为当前文献添加或移除标签，标签会同步更新列表</p>
+                                    </div>
+                                    <span class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full"
+                                        id="detailTagCount">0</span>
+                                </div>
+                                <div id="detailTagList" class="flex flex-wrap gap-2 mt-3 min-h-[2.25rem]">
+                                    <!-- Managed tags -->
+                                </div>
+                                <div class="mt-4 flex flex-wrap gap-2">
+                                    <input id="tagInput" type="text"
+                                        class="flex-1 min-w-[180px] px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                        placeholder="新标签...">
+                                    <button id="addTagBtn"
+                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-sm transition-colors">添加标签</button>
+                                </div>
+                                <p id="tagManagerMessage" class="text-xs text-red-500 mt-2 hidden"></p>
+                            </div>
                         </div>
 
                         <!-- Abstract -->
@@ -288,7 +378,7 @@
                         </div>
 
                         <!-- Conclusions & Innovations -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                                 <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center">
                                     <div
@@ -314,6 +404,21 @@
                                     创新点
                                 </h3>
                                 <div id="lit-innovations" class="text-slate-700 space-y-2"></div>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center mr-3 text-indigo-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3.055 11H5m14 0h1.945M12 5v2m0 10v2m4.95-12.95l-1.414 1.414M8.464 15.536L7.05 16.95m0-9.9l1.414 1.414m8.486 8.486l1.414 1.414"></path>
+                                        </svg>
+                                    </div>
+                                    实验
+                                </h3>
+                                <div id="lit-experiments" class="text-slate-700 space-y-2"></div>
                             </div>
                         </div>
 
@@ -416,20 +521,6 @@
                     class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm shadow-sm">保存</button>
             </div>
         </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay"
-        class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center hidden z-[100]">
-        <div class="relative">
-            <div class="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-            <div class="absolute inset-0 flex items-center justify-center">
-                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-            </div>
-        </div>
         <h2 class="mt-4 text-xl font-bold text-white tracking-wide">AI 深度分析中...</h2>
         <p class="text-slate-400 mt-2 font-light">正在提取核心观点与图表，请稍候</p>
     </div>
@@ -475,17 +566,26 @@
         </div>
     </div>
 
+    <div id="loadingOverlay" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-white/80 backdrop-blur-md">
+        <div class="flex flex-col items-center gap-3">
+            <div class="h-12 w-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
+            <p class="text-sm font-medium text-slate-600">加载中...</p>
+        </div>
+    </div>
+
     <script>
         // --- Global State ---
         let literatureList = [];
         let currentPaperId = null;
         let apiKey = localStorage.getItem('deepseek_api_key') || '';
         let imageMetadata = [];
+        let tagStats = [];
 
         // --- DOM Elements ---
         const els = {
             listView: document.getElementById('listView'),
             detailView: document.getElementById('detailView'),
+            tagView: document.getElementById('tagView'),
             tableBody: document.getElementById('literatureTableBody'),
             emptyState: document.getElementById('emptyState'),
             searchInput: document.getElementById('searchInput'),
@@ -493,6 +593,8 @@
             tagFilter: document.getElementById('tagFilter'),
             statTotal: document.getElementById('stat-total'),
             loading: document.getElementById('loadingOverlay'),
+            navHome: document.getElementById('nav-home'),
+            navTags: document.getElementById('nav-tags'),
             // Modals
             apiModal: document.getElementById('apiModal'),
             metadataModal: document.getElementById('metadataModal'),
@@ -505,9 +607,23 @@
             litAbstract: document.getElementById('lit-abstract'),
             litConclusions: document.getElementById('lit-conclusions'),
             litInnovations: document.getElementById('lit-innovations'),
+            litExperiments: document.getElementById('lit-experiments'),
             litShortcomings: document.getElementById('lit-shortcomings'),
             litFiguresList: document.getElementById('lit-figures-list'),
             litTagsContainer: document.getElementById('lit-tags-container'),
+            detailTagList: document.getElementById('detailTagList'),
+            tagInput: document.getElementById('tagInput'),
+            addTagBtn: document.getElementById('addTagBtn'),
+            tagManagerMessage: document.getElementById('tagManagerMessage'),
+            detailTagCount: document.getElementById('detailTagCount'),
+            // Tag Management
+            tagTableBody: document.getElementById('tagTableBody'),
+            tagCountBadge: document.getElementById('tagCountBadge'),
+            tagSearchInput: document.getElementById('tagSearchInput'),
+            tagEmptyState: document.getElementById('tagEmptyState'),
+            tagManageMessage: document.getElementById('tagManageMessage'),
+            refreshTagsBtn: document.getElementById('refreshTagsBtn'),
+            backToLibraryBtn: document.getElementById('backToLibraryBtn'),
             // Inputs
             editMetaTitle: document.getElementById('editMetaTitle'),
             editMetaAuthors: document.getElementById('editMetaAuthors'),
@@ -515,16 +631,185 @@
             editMetaJournal: document.getElementById('editMetaJournal'),
         };
 
+        function renderTagChips(tags, container, options = {}) {
+            if (!container) return;
+            const { removable = false, emptyMessage = '暂无标签' } = options;
+            if (!tags || tags.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-400 italic">${escapeHtml(emptyMessage)}</span>`;
+                return;
+            }
+            container.innerHTML = tags.map(tag => {
+                const safeTag = escapeHtml(tag);
+                const encodedTag = encodeURIComponent(tag);
+                if (!removable) {
+                    return `<span class="text-xs font-medium px-3 py-1 rounded-full bg-slate-100 text-slate-600 border border-transparent">${safeTag}</span>`;
+                }
+                return `<span class="flex items-center gap-2 pr-2 pl-3 py-1 rounded-full bg-slate-100 text-xs text-slate-600 border border-slate-200">
+                    <span class="truncate max-w-[110px]">${safeTag}</span>
+                    <button type="button" data-remove-tag="${encodedTag}" class="text-slate-400 hover:text-red-500 leading-none focus:outline-none">×</button>
+                </span>`;
+            }).join('');
+        }
+
+        function createTagManager() {
+            const state = { tags: [], busy: false };
+            let onChange = () => {};
+
+            function init() {
+                if (els.addTagBtn) {
+                    els.addTagBtn.addEventListener('click', handleAdd);
+                }
+                if (els.tagInput) {
+                    els.tagInput.addEventListener('keydown', event => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            handleAdd();
+                        }
+                    });
+                }
+                if (els.detailTagList) {
+                    els.detailTagList.addEventListener('click', event => {
+                        const button = event.target.closest('[data-remove-tag]');
+                        if (button) {
+                            handleRemove(button.dataset.removeTag);
+                        }
+                    });
+                }
+                render();
+            }
+
+            function render() {
+                renderTagChips(state.tags, els.litTagsContainer);
+                renderTagChips(state.tags, els.detailTagList, { removable: true, emptyMessage: '尚未添加标签' });
+                if (els.detailTagCount) {
+                    els.detailTagCount.textContent = `${state.tags.length}`;
+                }
+            }
+
+            function setTags(tags = []) {
+                state.tags = Array.isArray(tags) ? [...tags] : [];
+                render();
+            }
+
+            function setBusy(value) {
+                state.busy = !!value;
+                [els.addTagBtn, els.tagInput].forEach(el => {
+                    if (el) el.disabled = state.busy;
+                });
+            }
+
+            function showMessage(text) {
+                if (!els.tagManagerMessage) return;
+                if (text) {
+                    els.tagManagerMessage.textContent = text;
+                    els.tagManagerMessage.classList.remove('hidden');
+                } else {
+                    els.tagManagerMessage.textContent = '';
+                    els.tagManagerMessage.classList.add('hidden');
+                }
+            }
+
+            async function handleAdd() {
+                if (state.busy) return;
+                if (!currentPaperId) {
+                    showMessage('请先选中文献');
+                    return;
+                }
+                const tag = (els.tagInput?.value || '').trim();
+                if (!tag) {
+                    showMessage('请输入标签名称');
+                    return;
+                }
+                setBusy(true);
+                try {
+                    const data = await callTagApi('POST', `/api/literature/${currentPaperId}/tags`, { tag });
+                    setTags(Array.isArray(data) ? data : []);
+                    showMessage('');
+                    if (els.tagInput) {
+                        els.tagInput.value = '';
+                    }
+                    onChange();
+                } catch (error) {
+                    showMessage(error.message || '添加标签失败');
+                } finally {
+                    setBusy(false);
+                }
+            }
+
+            async function handleRemove(encodedTag) {
+                if (state.busy || !encodedTag) return;
+                if (!currentPaperId) {
+                    showMessage('请先选中文献');
+                    return;
+                }
+                const decodedTag = decodeURIComponent(encodedTag);
+                setBusy(true);
+                try {
+                    const data = await callTagApi('DELETE', `/api/literature/${currentPaperId}/tags/${encodeURIComponent(decodedTag)}`);
+                    setTags(Array.isArray(data) ? data : []);
+                    showMessage('');
+                    onChange();
+                } catch (error) {
+                    showMessage(error.message || '移除标签失败');
+                } finally {
+                    setBusy(false);
+                }
+            }
+
+            async function callTagApi(method, url, payload) {
+                const options = { method };
+                if (payload) {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify(payload);
+                }
+                const res = await fetch(url, options);
+                let data;
+                try {
+                    data = await res.json();
+                } catch {
+                    data = null;
+                }
+                if (!res.ok) {
+                    const message = data?.error || '标签操作失败';
+                    throw new Error(message);
+                }
+                return data;
+            }
+
+            function setChangeHandler(handler) {
+                onChange = typeof handler === 'function' ? handler : () => {};
+            }
+
+            return { init, setTags, setChangeHandler };
+        }
+
+        const tagManager = createTagManager();
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             loadLiterature();
             setupEventListeners();
+            setActiveNav('home');
         });
 
         function setupEventListeners() {
             // Navigation
             document.getElementById('backToListBtn').addEventListener('click', showListView);
-            document.getElementById('nav-home').addEventListener('click', showListView);
+            if (els.navHome) {
+                els.navHome.addEventListener('click', event => {
+                    event.preventDefault();
+                    showListView();
+                });
+            }
+            if (els.navTags) {
+                els.navTags.addEventListener('click', event => {
+                    event.preventDefault();
+                    showTagView();
+                });
+            }
+            if (els.backToLibraryBtn) {
+                els.backToLibraryBtn.addEventListener('click', () => showListView());
+            }
 
             // Upload
             document.getElementById('importButton').addEventListener('click', () => {
@@ -560,6 +845,19 @@
             document.getElementById('manageImagesBtn').addEventListener('click', openImageManager);
             document.getElementById('closeImageManagerBtn').addEventListener('click', () => els.imageManagerModal.classList.add('hidden'));
             document.getElementById('saveImageMetadataBtn').addEventListener('click', saveImageMetadata);
+
+            // Tag management view
+            if (els.refreshTagsBtn) {
+                els.refreshTagsBtn.addEventListener('click', loadTagStats);
+            }
+            if (els.tagSearchInput) {
+                els.tagSearchInput.addEventListener('input', renderTagManagement);
+            }
+            if (els.tagTableBody) {
+                els.tagTableBody.addEventListener('click', handleTagTableClick);
+            }
+
+            tagManager.init();
         }
 
         // --- Core Logic ---
@@ -576,6 +874,152 @@
             } catch (e) {
                 console.error(e);
                 // alert('加载失败: ' + e.message);
+            }
+        }
+
+        async function addTagFromList(paperId) {
+            if (!paperId) return;
+            const tag = prompt('为该文献添加的新标签', '');
+            if (!tag || !tag.trim()) return;
+            try {
+                const res = await fetch(`/api/literature/${paperId}/tags`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tag: tag.trim() })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.error || '添加标签失败');
+                await loadLiterature();
+                if (currentPaperId === paperId) {
+                    loadDetail(paperId);
+                }
+                alert('标签已添加');
+            } catch (error) {
+                alert(error.message || '添加标签失败');
+            }
+        }
+
+        tagManager.setChangeHandler(async () => {
+            await loadLiterature();
+            if (els.tagView && !els.tagView.classList.contains('hidden')) {
+                loadTagStats();
+            }
+        });
+
+        // --- Tag Management View ---
+
+        async function loadTagStats() {
+            try {
+                const res = await fetch('/api/tags/stats');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.error || '标签列表加载失败');
+                tagStats = Array.isArray(data) ? data : [];
+                setTagManageMessage('');
+                renderTagManagement();
+            } catch (error) {
+                console.error(error);
+                setTagManageMessage(error.message || '加载标签列表失败', true);
+                if (els.tagTableBody) {
+                    els.tagTableBody.innerHTML = '';
+                }
+            }
+        }
+
+        function renderTagManagement() {
+            const query = (els.tagSearchInput?.value || '').toLowerCase();
+            const filtered = tagStats.filter(item => (item.tag || '').toLowerCase().includes(query));
+
+            if (els.tagCountBadge) {
+                els.tagCountBadge.textContent = `${filtered.length}`;
+            }
+            if (!els.tagTableBody) return;
+
+            if (filtered.length === 0) {
+                els.tagTableBody.innerHTML = '';
+                if (els.tagEmptyState) els.tagEmptyState.classList.remove('hidden');
+                return;
+            }
+            if (els.tagEmptyState) els.tagEmptyState.classList.add('hidden');
+
+            els.tagTableBody.innerHTML = filtered.map(item => {
+                const safeTag = escapeHtml(item.tag || '');
+                const encodedTag = encodeURIComponent(item.tag || '');
+                return `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-3 text-sm font-semibold text-slate-800">${safeTag}</td>
+                    <td class="px-6 py-3 text-sm text-slate-500">${item.count || 0}</td>
+                    <td class="px-6 py-3 text-right text-sm font-medium space-x-2">
+                        <button data-action="rename-tag" data-tag="${encodedTag}" class="px-3 py-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50">重命名</button>
+                        <button data-action="delete-tag" data-tag="${encodedTag}" class="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">删除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function handleTagTableClick(event) {
+            const button = event.target.closest('[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            const tag = decodeURIComponent(button.dataset.tag || '');
+            if (!tag) return;
+
+            if (action === 'rename-tag') {
+                renameTag(tag);
+            } else if (action === 'delete-tag') {
+                deleteTag(tag);
+            }
+        }
+
+        async function renameTag(tag) {
+            const newTag = prompt(`将标签 "${tag}" 重命名为`, tag);
+            if (!newTag) return;
+            const trimmed = newTag.trim();
+            if (!trimmed || trimmed === tag) return;
+
+            try {
+                const res = await fetch('/api/tags/rename', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_tag: tag, new_tag: trimmed })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.error || '重命名失败');
+                tagStats = Array.isArray(data) ? data : [];
+                setTagManageMessage('标签已重命名');
+                renderTagManagement();
+                loadLiterature();
+            } catch (error) {
+                setTagManageMessage(error.message || '重命名失败', true);
+            }
+        }
+
+        async function deleteTag(tag) {
+            const confirmed = confirm(`删除标签 "${tag}" ? 该标签将从所有文献中移除。`);
+            if (!confirmed) return;
+            try {
+                const res = await fetch(`/api/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data?.error || '删除标签失败');
+                tagStats = Array.isArray(data) ? data : [];
+                setTagManageMessage('标签已删除');
+                renderTagManagement();
+                loadLiterature();
+            } catch (error) {
+                setTagManageMessage(error.message || '删除标签失败', true);
+            }
+        }
+
+        function setTagManageMessage(text, isError = false) {
+            const el = els.tagManageMessage;
+            if (!el) return;
+            if (text) {
+                el.textContent = text;
+                el.classList.remove('hidden');
+                el.classList.toggle('text-red-600', isError);
+                el.classList.toggle('text-amber-600', !isError);
+            } else {
+                el.textContent = '';
+                el.classList.add('hidden');
             }
         }
 
@@ -615,7 +1059,10 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 text-right text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 rounded hover:bg-blue-50" onclick="event.stopPropagation(); loadDetail('${item.id}')">查看</button>
+                        <div class="flex justify-end gap-2">
+                            <button class="text-slate-600 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 rounded hover:bg-slate-100 border border-slate-200" onclick="event.stopPropagation(); addTagFromList('${item.id}')">添加标签</button>
+                            <button class="text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 rounded hover:bg-blue-50" onclick="event.stopPropagation(); loadDetail('${item.id}')">查看</button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -660,12 +1107,12 @@
 
             renderListContent(els.litConclusions, content.结论);
             renderListContent(els.litInnovations, content.创新点);
+            renderListContent(els.litExperiments, content.实验 || content.实验结果);
             renderListContent(els.litShortcomings, content.不足);
 
             // Tags
-            els.litTagsContainer.innerHTML = (data.custom_tags || []).map(t =>
-                `<span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors cursor-default">${escapeHtml(t)}</span>`
-            ).join('');
+            const currentTags = data.custom_tags || [];
+            tagManager.setTags(currentTags);
 
             // Figures
             renderFigures(content.关键图表 || [], data.image_metadata || []);
@@ -837,6 +1284,7 @@
         window.updateImgMeta = (idx, field, value) => {
             imageMetadata[idx][field] = value;
         };
+        window.addTagFromList = addTagFromList;
 
         async function saveImageMetadata() {
             try {
@@ -856,12 +1304,43 @@
         // --- Helpers ---
         function showListView() {
             els.detailView.classList.add('hidden');
+            if (els.tagView) els.tagView.classList.add('hidden');
             els.listView.classList.remove('hidden');
+            setActiveNav('home');
         }
+
+        async function showTagView() {
+            if (els.listView) els.listView.classList.add('hidden');
+            if (els.detailView) els.detailView.classList.add('hidden');
+            if (els.tagView) els.tagView.classList.remove('hidden');
+            setActiveNav('tags');
+            await loadTagStats();
+        }
+
         function showDetailView() {
             els.listView.classList.add('hidden');
+            if (els.tagView) els.tagView.classList.add('hidden');
             els.detailView.classList.remove('hidden');
+            setActiveNav('home');
         }
+
+        function setActiveNav(target) {
+            const active = ['bg-blue-600', 'text-white', 'shadow-lg', 'shadow-blue-900/20'];
+            const inactive = ['text-slate-200', 'hover:bg-slate-800/60', 'hover:text-white'];
+
+            [els.navHome, els.navTags].forEach(nav => {
+                if (!nav) return;
+                nav.classList.remove(...active);
+                inactive.forEach(cls => nav.classList.add(cls));
+            });
+
+            const targetEl = target === 'tags' ? els.navTags : els.navHome;
+            if (targetEl) {
+                targetEl.classList.add(...active);
+                inactive.forEach(cls => targetEl.classList.remove(cls));
+            }
+        }
+
         function saveApiKey() {
             const key = document.getElementById('apiKey').value;
             if (key) {

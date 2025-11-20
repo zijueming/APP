@@ -7,7 +7,7 @@ import webbrowser
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 
-import db_manager
+
 from routes.literature_routes import literature_bp
 
 
@@ -47,7 +47,6 @@ app = create_app()
 
 
 if __name__ == "__main__":
-    db_manager.setup_database()
     logging.info("Starting Flask server...")
 
     if os.environ.get("WERKZEUG_RUN_MAIN") != "true":

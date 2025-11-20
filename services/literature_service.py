@@ -10,9 +10,11 @@ from typing import Any, Dict, List, Tuple
 
 from werkzeug.datastructures import FileStorage
 
-import analysis_core
-import db_manager
-
+# Type checking imports only
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from analysis_core import AnalysisService
+    from db_manager import LiteratureRepository
 
 class LiteratureServiceError(Exception):
     """
@@ -26,20 +28,23 @@ class LiteratureServiceError(Exception):
         self.status_code = status_code or self.default_status
 
 
-class AuthorizationError(LiteratureServiceError):
-    default_status = 401
-
-
 class InvalidUploadError(LiteratureServiceError):
     default_status = 400
+
+
+class NotFoundError(LiteratureServiceError):
+    default_status = 404
+
+
+class AuthorizationError(LiteratureServiceError):
+    default_status = 401
 
 
 class AnalysisFailure(LiteratureServiceError):
     default_status = 500
 
-
-class NotFoundError(LiteratureServiceError):
-    default_status = 404
+class TagOperationError(LiteratureServiceError):
+    default_status = 400
 
 
 class LiteratureService:
@@ -50,7 +55,7 @@ class LiteratureService:
 
     ALLOWED_IMAGE_CATEGORIES = {"figure", "subfigure", "cover", "ignore"}
 
-    def __init__(self, analyzer=analysis_core, repository=db_manager):
+    def __init__(self, analyzer: AnalysisService, repository: LiteratureRepository):
         self._log = logging.getLogger(self.__class__.__name__)
         self.analyzer = analyzer
         self.repository = repository
@@ -58,13 +63,6 @@ class LiteratureService:
     # ------------------------------------------------------------------ #
     # Public API for routes
     # ------------------------------------------------------------------ #
-    def parse_api_key(self, auth_header: str | None) -> str:
-        if not auth_header or not auth_header.startswith("Bearer "):
-            raise AuthorizationError("Missing Authorization Header")
-        token = auth_header.split(" ", 1)[1].strip()
-        if not token:
-            raise AuthorizationError("API Key missing in Authorization header")
-        return token
 
     def list_literature(self):
         return self.repository.get_all_literature_summaries()
@@ -78,9 +76,6 @@ class LiteratureService:
     def delete_literature(self, paper_id: str):
         self.repository.delete_literature_by_id(paper_id)
 
-    def list_tags(self):
-        return self.repository.get_all_tags()
-
     def add_tag(self, paper_id: str, tag: str):
         try:
             return self.repository.add_tag_to_literature(paper_id, tag)
@@ -92,6 +87,24 @@ class LiteratureService:
             return self.repository.remove_tag_from_literature(paper_id, tag)
         except FileNotFoundError:
             raise NotFoundError(f"Record {paper_id} not found")
+
+    def list_tags(self):
+        return self.repository.get_all_tags()
+
+    def list_tag_stats(self):
+        return self.repository.get_tag_stats()
+
+    def rename_tag(self, old_tag: str, new_tag: str):
+        if not old_tag or not new_tag:
+            raise TagOperationError("旧标签和新标签均不能为空")
+        if old_tag == new_tag:
+            return self.repository.get_tag_stats()
+        return self.repository.rename_tag_globally(old_tag, new_tag)
+
+    def delete_tag(self, tag: str):
+        if not tag:
+            raise TagOperationError("标签名称不能为空")
+        return self.repository.delete_tag_globally(tag)
 
     def get_image_metadata(self, paper_id: str):
         record = self.get_literature(paper_id)
@@ -116,6 +129,11 @@ class LiteratureService:
         self.repository.update_image_metadata(paper_id, normalized)
         return normalized
 
+    def update_reading_time(self, paper_id: str, reading_time: str):
+        normalized = self._normalize_reading_time(reading_time)
+        self.repository.update_reading_time(paper_id, normalized)
+        return {"reading_time": normalized}
+
     def resolve_image_request(self, paper_id: str, filename: str) -> Tuple[str, str]:
         if not filename or ".." in filename or filename.startswith("/"):
             raise InvalidUploadError("Invalid filename")
@@ -126,6 +144,14 @@ class LiteratureService:
             raise NotFoundError(f"Image {filename} not found for {paper_id}")
 
         return image_dir, filename
+
+    def parse_api_key(self, auth_header: str | None) -> str:
+        if not auth_header or not auth_header.startswith("Bearer "):
+            raise AuthorizationError("Missing Authorization Header")
+        token = auth_header.split(" ", 1)[1].strip()
+        if not token:
+            raise AuthorizationError("API Key missing in Authorization header")
+        return token
 
     def process_upload(self, file_storage: FileStorage | None, api_key: str) -> Dict[str, Any]:
         file_storage = self._validate_pdf(file_storage)
@@ -159,9 +185,26 @@ class LiteratureService:
                 fallback_title=file_storage.filename or "未命名文献",
             )
 
+    def get_pdf_path(self, paper_id: str) -> str:
+        """
+        Get the absolute path to the original PDF file.
+        """
+        paper_dir = self.repository.get_paper_dir(paper_id)
+        pdf_path = os.path.join(paper_dir, "original.pdf")
+        if not os.path.exists(pdf_path):
+            raise NotFoundError(f"PDF for {paper_id} not found")
+        return pdf_path
+
+    def update_basic_metadata(self, paper_id: str, metadata: Dict[str, Any]):
+        """
+        Update basic metadata for a literature record.
+        """
+        return self.repository.update_literature_metadata(paper_id, metadata)
+
     # ------------------------------------------------------------------ #
     # Helpers
     # ------------------------------------------------------------------ #
+
     def _validate_pdf(self, file_storage: FileStorage | None) -> FileStorage:
         if file_storage is None:
             raise InvalidUploadError("No file provided")
@@ -183,6 +226,9 @@ class LiteratureService:
             if os.path.exists(tmp_pdf_path):
                 os.remove(tmp_pdf_path)
                 self._log.debug("Removed temp file %s", tmp_pdf_path)
+
+    def _current_timestamp(self) -> str:
+        return datetime.now(timezone.utc).isoformat()
 
     def _enrich_analysis_payload(
         self,
@@ -209,6 +255,9 @@ class LiteratureService:
         return analysis_data
 
     def _build_summary(self, analysis_payload: Dict[str, Any], fallback_title: str) -> Dict[str, Any]:
+        """
+        Build a lightweight summary for list view.
+        """
         meta = analysis_payload.get("文献信息", {})
         return {
             "id": analysis_payload.get("paper_id"),
@@ -220,30 +269,6 @@ class LiteratureService:
             "upload_time": analysis_payload.get("upload_time"),
         }
 
-    def update_reading_time(self, paper_id: str, reading_time: str):
-        normalized = self._normalize_reading_time(reading_time)
-        self.repository.update_reading_time(paper_id, normalized)
-        return {"reading_time": normalized}
-
-    def _normalize_reading_time(self, value: str) -> str:
-        if not value:
-            raise InvalidUploadError("Missing reading_time")
-        normalized = value.strip()
-        if normalized.endswith("Z"):
-            normalized = normalized[:-1] + "+00:00"
-        try:
-            parsed = datetime.fromisoformat(normalized)
-        except ValueError:
-            raise InvalidUploadError("reading_time must be ISO format")
-        utc = parsed.astimezone(timezone.utc)
-        return utc.isoformat()
-
-    def _current_timestamp(self) -> str:
-        return datetime.now(timezone.utc).isoformat()
-
-    # ------------------------------------------------------------------ #
-    # Image metadata helpers
-    # ------------------------------------------------------------------ #
     def _default_image_metadata(
         self,
         image_files: List[str] | None,
@@ -311,20 +336,14 @@ class LiteratureService:
             if not isinstance(item, dict):
                 raise InvalidUploadError("每个图片元数据项都必须是对象")
             filename = item.get("filename")
-            if not filename:
-                raise InvalidUploadError("图片元数据缺少文件名")
-            provided_map[filename] = {
-                "filename": filename,
-                "figure_id": str(item.get("figure_id") or "").strip(),
-                "label": str(item.get("label") or "").strip(),
-                "category": self._normalize_category(item.get("category")),
-            }
+            if filename:
+                provided_map[filename] = item
 
         existing_lookup = {
-            entry.get("filename"): entry for entry in (existing_metadata or []) if isinstance(entry, dict)
+            item.get("filename"): item for item in (existing_metadata or []) if isinstance(item, dict)
         }
 
-        normalized: List[Dict[str, Any]] = []
+        normalized = []
         cover_seen = False
 
         for idx, filename in enumerate(image_files):
@@ -342,14 +361,6 @@ class LiteratureService:
             normalized.append(entry)
 
         return self._enforce_sequential_figure_ids(normalized)
-
-    def _normalize_category(self, category_value) -> str:
-        if not category_value:
-            return "figure"
-        value = str(category_value).strip().lower()
-        if value not in self.ALLOWED_IMAGE_CATEGORIES:
-            return "figure"
-        return value
 
     def _enforce_sequential_figure_ids(self, metadata: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -379,19 +390,15 @@ class LiteratureService:
 
         return metadata
 
-    def get_pdf_path(self, paper_id: str) -> str:
-        """
-        Get the absolute path to the original PDF file.
-        """
-        paper_dir = self.repository.get_paper_dir(paper_id)
-        pdf_path = os.path.join(paper_dir, "original.pdf")
-        if not os.path.exists(pdf_path):
-            raise NotFoundError(f"PDF for {paper_id} not found")
-        return pdf_path
-
-    def update_basic_metadata(self, paper_id: str, metadata: Dict[str, Any]):
-        """
-        Update basic metadata for a literature record.
-        """
-        return self.repository.update_literature_metadata(paper_id, metadata)
-
+    def _normalize_reading_time(self, value: str) -> str:
+        if not value:
+            raise InvalidUploadError("Missing reading_time")
+        normalized = value.strip()
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        try:
+            parsed = datetime.fromisoformat(normalized)
+        except ValueError:
+            raise InvalidUploadError("reading_time must be ISO format")
+        utc = parsed.astimezone(timezone.utc)
+        return utc.isoformat()

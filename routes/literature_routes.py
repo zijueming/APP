@@ -1,13 +1,19 @@
 import logging
 import os
 
-
 from flask import Blueprint, jsonify, request, send_from_directory
 
 from services.literature_service import LiteratureService, LiteratureServiceError
+from db_manager import LiteratureRepository
+from analysis_core import AnalysisService
 
 literature_bp = Blueprint("literature", __name__)
-service = LiteratureService()
+
+# Dependency Injection Wiring
+repository = LiteratureRepository()
+analyzer = AnalysisService()
+service = LiteratureService(analyzer=analyzer, repository=repository)
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,8 +28,8 @@ def _execute(operation, default_status=200):
     except LiteratureServiceError as exc:
         return jsonify({"error": str(exc)}), exc.status_code
     except Exception as exc:
-        logger.exception("Unexpected server error")
-        return jsonify({"error": "Internal server error"}), 500
+        logger.exception("Unexpected error")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 
 @literature_bp.route("/api/literature", methods=["GET"])
@@ -38,21 +44,25 @@ def get_literature(paper_id):
 
 @literature_bp.route("/api/literature/<paper_id>", methods=["DELETE"])
 def delete_literature(paper_id):
-    def operation():
-        service.delete_literature(paper_id)
-        return {"success": True, "message": f"Record {paper_id} deleted"}
-
-    return _execute(operation)
+    return _execute(lambda: (service.delete_literature(paper_id), 204))
 
 
 @literature_bp.route("/api/upload", methods=["POST"])
-def upload_pdf():
-    def operation():
-        api_key = service.parse_api_key(request.headers.get("Authorization"))
-        summary = service.process_upload(request.files.get("file"), api_key)
-        return summary, 201
+def upload_literature():
+    api_key = service.parse_api_key(request.headers.get("Authorization"))
+    file = request.files.get("file")
+    return _execute(lambda: (service.process_upload(file, api_key), 201))
 
-    return _execute(operation, default_status=201)
+
+@literature_bp.route("/api/literature/<paper_id>/tags", methods=["POST"])
+def add_tag(paper_id):
+    tag = request.json.get("tag")
+    return _execute(lambda: service.add_tag(paper_id, tag))
+
+
+@literature_bp.route("/api/literature/<paper_id>/tags/<tag>", methods=["DELETE"])
+def remove_tag(paper_id, tag):
+    return _execute(lambda: service.remove_tag(paper_id, tag))
 
 
 @literature_bp.route("/api/tags", methods=["GET"])
@@ -60,26 +70,22 @@ def list_tags():
     return _execute(lambda: service.list_tags())
 
 
-@literature_bp.route("/api/literature/<paper_id>/tags", methods=["POST"])
-def add_tag(paper_id):
-    tag_payload = request.json or {}
-    if "tag" not in tag_payload:
-        return jsonify({"error": "Missing 'tag' in request body"}), 400
-
-    def operation():
-        updated_tags = service.add_tag(paper_id, tag_payload["tag"])
-        return {"success": True, "tags": updated_tags}
-
-    return _execute(operation)
+@literature_bp.route("/api/tags/stats", methods=["GET"])
+def list_tag_stats():
+    return _execute(lambda: service.list_tag_stats())
 
 
-@literature_bp.route("/api/literature/<paper_id>/tags/<tag_name>", methods=["DELETE"])
-def remove_tag(paper_id, tag_name):
-    def operation():
-        updated_tags = service.remove_tag(paper_id, tag_name)
-        return {"success": True, "tags": updated_tags}
+@literature_bp.route("/api/tags/rename", methods=["PUT"])
+def rename_tag():
+    payload = request.json or {}
+    old_tag = payload.get("old_tag")
+    new_tag = payload.get("new_tag")
+    return _execute(lambda: service.rename_tag(old_tag, new_tag))
 
-    return _execute(operation)
+
+@literature_bp.route("/api/tags/<tag>", methods=["DELETE"])
+def delete_tag(tag):
+    return _execute(lambda: service.delete_tag(tag))
 
 
 @literature_bp.route("/api/literature/<paper_id>/images/metadata", methods=["GET"])
@@ -89,32 +95,17 @@ def get_image_metadata(paper_id):
 
 @literature_bp.route("/api/literature/<paper_id>/images/metadata", methods=["PUT"])
 def update_image_metadata(paper_id):
-    payload = request.json or {}
-    if "metadata" not in payload:
-        return jsonify({"error": "Missing 'metadata' in request body"}), 400
-
-    def operation():
-        updated_metadata = service.update_image_metadata(paper_id, payload["metadata"])
-        return {"success": True, "metadata": updated_metadata}
-
-    return _execute(operation)
+    payload = request.json.get("metadata")
+    return _execute(lambda: {"metadata": service.update_image_metadata(paper_id, payload)})
 
 
-@literature_bp.route("/api/literature/<paper_id>/reading-time", methods=["PUT"])
+@literature_bp.route("/api/literature/<paper_id>/reading_time", methods=["POST"])
 def update_reading_time(paper_id):
-    payload = request.json or {}
-    new_time = payload.get("reading_time")
-    if not new_time:
-        return jsonify({"error": "Missing 'reading_time' in request body"}), 400
-
-    def operation():
-        result = service.update_reading_time(paper_id, new_time)
-        return {"success": True, **result}
-
-    return _execute(operation)
+    reading_time = request.json.get("reading_time")
+    return _execute(lambda: service.update_reading_time(paper_id, reading_time))
 
 
-@literature_bp.route("/api/literature/<paper_id>/images/<filename>")
+@literature_bp.route("/api/literature/<paper_id>/images/<filename>", methods=["GET"])
 def serve_image(paper_id, filename):
     try:
         directory, safe_filename = service.resolve_image_request(paper_id, filename)
@@ -139,13 +130,7 @@ def serve_pdf(paper_id):
         logger.exception("Failed to serve PDF")
         return jsonify({"error": "Failed to serve PDF"}), 500
 
-
 @literature_bp.route("/api/literature/<paper_id>/metadata", methods=["PUT"])
-def update_metadata(paper_id):
-    payload = request.json or {}
-    
-    def operation():
-        updated_info = service.update_basic_metadata(paper_id, payload)
-        return {"success": True, "metadata": updated_info}
-
-    return _execute(operation)
+def update_basic_metadata(paper_id):
+    metadata = request.json
+    return _execute(lambda: service.update_basic_metadata(paper_id, metadata))
