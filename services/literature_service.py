@@ -378,3 +378,20 @@ class LiteratureService:
             next_index += 1
 
         return metadata
+
+    def get_pdf_path(self, paper_id: str) -> str:
+        """
+        Get the absolute path to the original PDF file.
+        """
+        paper_dir = self.repository.get_paper_dir(paper_id)
+        pdf_path = os.path.join(paper_dir, "original.pdf")
+        if not os.path.exists(pdf_path):
+            raise NotFoundError(f"PDF for {paper_id} not found")
+        return pdf_path
+
+    def update_basic_metadata(self, paper_id: str, metadata: Dict[str, Any]):
+        """
+        Update basic metadata for a literature record.
+        """
+        return self.repository.update_literature_metadata(paper_id, metadata)
+

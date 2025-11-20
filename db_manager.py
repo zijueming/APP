@@ -248,3 +248,23 @@ def get_all_tags() -> List[str]:
             logging.warning(f"读取标签 {filepath} 失败: {e}")
             
     return sorted(list(all_tags))
+
+
+def update_literature_metadata(paper_id: str, metadata: Dict) -> Dict:
+    """
+    [供 PUT /api/literature/<id>/metadata 调用]
+    更新文献的基础信息 (标题, 作者, 年份, 期刊等)
+    """
+    def _update(data):
+        if "文献信息" not in data:
+            data["文献信息"] = {}
+        
+        # 只更新允许的字段
+        allowed_fields = ["标题", "作者", "年份", "期刊"]
+        for field in allowed_fields:
+            if field in metadata:
+                data["文献信息"][field] = metadata[field]
+        return data
+
+    updated_data = _mutate_analysis_file(paper_id, _update)
+    return updated_data.get("文献信息", {})

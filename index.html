@@ -1,1140 +1,894 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文献管理平台</title>
-    <!-- 引入Tailwind CSS -->
+    <title>FuckPaper - 文献管理</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* 使用 'Inter' 字体 (Tailwind 默认) */
         body {
-            font-family: 'Inter', 'sans-serif';
-            overflow: hidden; /* 防止页面滚动 */
+            font-family: 'Inter', sans-serif;
         }
-        /* 详情页标签激活样式 */
-        .tab-active {
-            border-bottom-color: #3b82f6; /* blue-600 */
-            color: #3b82f6;
-            font-weight: 500;
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
         }
-        /* 加载动画 */
-        .loader {
-            border-top-color: #3498db;
-            animation: spin 1s linear infinite;
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
 
-    <div class="flex h-screen">
-        <!-- 侧边栏 -->
-        <aside class="w-60 bg-white shadow-md flex flex-col flex-shrink-0">
-            <!-- Logo -->
-            <div class="h-16 flex items-center justify-center border-b">
-                <h1 class="text-xl font-bold text-blue-600">FuckPaper</h1>
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 transition-all duration-300 shadow-xl z-20">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800">
+            <div class="flex items-center gap-2 font-bold text-xl tracking-tight">
+                <span class="text-blue-500">Fuck</span>Paper
             </div>
-            
-            <!-- 导航菜单 -->
-            <nav class="flex-1 mt-4">
-                <a href="#" class="flex items-center px-6 py-3 text-blue-600 bg-blue-50 border-r-4 border-blue-600">
-                    <!-- icon: 文献列表 -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>文献列表</span>
-                </a>
-            </nav>
+        </div>
 
-            <!-- 统计信息 -->
-            <div class="p-4 m-4 border rounded-lg bg-gray-50">
-                <h3 class="font-semibold text-sm mb-4">统计信息</h3>
-                <div class="space-y-2 text-sm">
-                    <div class="flex justify-between">
-                        <span>总文献数</span>
-                        <span id="stat-total" class="font-medium">0</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>本月新增</span>
-                        <span id="stat-new" class="font-medium text-green-600">0</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>总标签数</span>
-                        <span id="stat-tags" class="font-medium text-blue-600">0</span>
-                    </div>
+        <nav class="flex-1 py-6 px-3 space-y-1">
+            <a href="#" id="nav-home"
+                class="flex items-center px-3 py-2.5 rounded-lg bg-blue-600 text-white group transition-all shadow-lg shadow-blue-900/20">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                    </path>
+                </svg>
+                文献库
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-slate-800">
+            <div class="bg-slate-800/50 rounded-xl p-4 backdrop-blur-sm border border-slate-700/50">
+                <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">统计概览</h4>
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-slate-300 text-sm">总文献</span>
+                    <span id="stat-total" class="text-xl font-bold text-white">0</span>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full" style="width: 70%"></div>
                 </div>
             </div>
-        </aside>
+        </div>
+    </aside>
 
-        <!-- 主内容区 -->
-        <div class="flex-1 flex flex-col">
-            <!-- 顶部栏 -->
-            <header class="h-16 bg-white border-b flex items-center justify-between px-6 flex-shrink-0">
-                <!-- 搜索框 -->
-                <div class="relative">
-                    <input type="text" placeholder="全局搜索文献..." class="pl-10 pr-4 py-2 w-80 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <!-- icon: 搜索 -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                
-                <!-- 右侧图标和用户 -->
-                <div class="flex items-center space-x-4">
-                    <!-- 配置API按钮 -->
-                    <button id="openApiModalBtn" class="flex items-center text-sm text-gray-600 hover:text-blue-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 relative">
+        <!-- Header -->
+        <header
+            class="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 flex-shrink-0 z-10 sticky top-0">
+            <div class="flex items-center flex-1 max-w-2xl">
+                <div class="relative w-full max-w-md group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        配置API
-                    </button>
-                    <!-- 用户头像 -->
-                    <div class="flex items-center space-x-2">
-                        <span class="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold">爱因斯坦</span>
                     </div>
+                    <input type="text" id="searchInput"
+                        class="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg leading-5 bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all sm:text-sm"
+                        placeholder="搜索标题、作者、标签...">
                 </div>
-            </header>
+            </div>
 
-            <!-- ************************** -->
-            <!-- * 文献列表视图     * -->
-            <!-- ************************** -->
-            <main id="listView" class="flex-1 p-6 overflow-auto">
-                <!-- 面包屑 -->
-                <div class="text-sm text-gray-500 mb-4">
-                    <span>首页</span> &gt; <span>文献列表</span>
+            <div class="flex items-center gap-4">
+                <button id="openApiModalBtn"
+                    class="p-2 text-slate-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+                    title="配置 API">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </button>
+                <div
+                    class="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-md cursor-pointer ring-2 ring-white">
+                    A
                 </div>
-                
-                <!-- 标题和操作按钮 -->
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold">我的文献</h2>
-                    <div class="space-x-2">
-                        <!-- 隐藏的 file input -->
+            </div>
+        </header>
+
+        <!-- View Container -->
+        <main class="flex-1 overflow-auto p-6 relative" id="mainContainer">
+
+            <!-- List View -->
+            <div id="listView" class="max-w-7xl mx-auto space-y-6 fade-in">
+                <!-- Toolbar -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-2xl font-bold text-slate-800 tracking-tight">我的文献</h2>
+                        <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold"
+                            id="paperCountBadge">0</span>
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <select id="yearFilter"
+                            class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm hover:border-blue-300 transition-colors cursor-pointer">
+                            <option value="">所有年份</option>
+                        </select>
+                        <select id="tagFilter"
+                            class="bg-white border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 shadow-sm hover:border-blue-300 transition-colors cursor-pointer">
+                            <option value="">所有标签</option>
+                        </select>
                         <input type="file" id="pdfUploadInput" class="hidden" accept=".pdf">
-                        
-                        <button id="importButton" class="flex items-center bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        <button id="importButton"
+                            class="flex items-center justify-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition-all hover:shadow-md active:scale-95">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4"></path>
                             </svg>
                             导入文献
                         </button>
-                        <button class="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </div>
+                </div>
+
+                <!-- Grid/List -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    标题</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-48">
+                                    作者</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-24">
+                                    年份</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-48">
+                                    标签</th>
+                                <th scope="col"
+                                    class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-32">
+                                    操作</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200" id="literatureTableBody">
+                            <!-- Dynamic Content -->
+                        </tbody>
+                    </table>
+                    <!-- Empty State -->
+                    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                        <div class="bg-slate-100 p-4 rounded-full mb-4">
+                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                                </path>
                             </svg>
-                            批量导出
+                        </div>
+                        <h3 class="text-lg font-medium text-slate-900">暂无文献</h3>
+                        <p class="text-slate-500 mt-1">点击右上角导入按钮开始添加。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail View -->
+            <div id="detailView" class="hidden max-w-7xl mx-auto h-full flex flex-col fade-in">
+                <!-- Detail Header -->
+                <div class="flex items-start justify-between mb-6">
+                    <button id="backToListBtn"
+                        class="group flex items-center text-sm text-slate-500 hover:text-blue-600 transition-colors mb-2 px-2 py-1 rounded hover:bg-slate-100">
+                        <svg class="w-4 h-4 mr-1 group-hover:-translate-x-1 transition-transform" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        返回列表
+                    </button>
+                    <div class="flex gap-2">
+                        <button id="readPdfBtn"
+                            class="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                </path>
+                            </svg>
+                            阅读 PDF
+                        </button>
+                        <button id="editMetadataBtn"
+                            class="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                            编辑信息
+                        </button>
+                        <button id="manageImagesBtn"
+                            class="px-3 py-1.5 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors">
+                            管理图片
+                        </button>
+                        <button id="detailDeleteBtn"
+                            class="px-3 py-1.5 bg-white border border-red-200 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors">
+                            删除
                         </button>
                     </div>
                 </div>
 
-                <!-- 过滤器和表格 -->
-                <div class="bg-white rounded-lg shadow-lg">
-                    <!-- 过滤器 -->
-                    <div class="p-4 border-b flex items-center justify-between space-x-4">
-                        <input type="text" placeholder="搜索文献标题、作者、关键词..." class="flex-1 border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <select class="border rounded-lg px-4 py-2 text-sm focus:outline-none">
-                            <option>全部年份</option>
-                        </select>
-                        <select id="tagFilterDropdown" class="border rounded-lg px-4 py-2 text-sm focus:outline-none">
-                            <option>全部标签</option>
-                            <!-- 标签将动态填充 -->
-                        </select>
-                        <button id="openGlobalTagModalBtn" class="text-sm text-blue-600 hover:underline whitespace-nowrap">管理全部标签</button>
-                    </div>
-                    
-                    <!-- 表格 -->
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 text-gray-600">
-                            <tr>
-                                <th class="p-4 w-12"><input type="checkbox"></th>
-                                <th class="p-4">标题</th>
-                                <th class="p-4 w-40">作者</th>
-                                <th class="p-4 w-36">阅读时间</th>
-                                <th class="p-4 w-24">年份</th>
-                                <th class="p-4 w-48">自定义标签</th>
-                                <th class="p-4 w-32">操作</th>
-                            </tr>
-                        </thead>
-                        <!-- [新] 动态表格主体 -->
-                        <tbody id="literatureTableBody">
-                            <!-- 示例: 无数据时 -->
-                             <tr id="noDataRow">
-                                <td colspan="6" class="p-8 text-center text-gray-500">
-                                    暂无文献。请点击 "导入文献" 开始。
-                                </td>
-                            </tr>
-                            <!-- 动态内容将插入此处 -->
-                        </tbody>
-                    </table>
-
-                    <!-- 分页 -->
-                    <div class="p-4 flex justify-between items-center text-sm">
-                        <div>
-                            <span id="paginationInfo">显示 0 条, 共 0 条记录</span>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full overflow-hidden pb-6">
+                    <!-- Left Column: Info & Text -->
+                    <div class="lg:col-span-2 flex flex-col gap-6 overflow-y-auto pr-2 pb-10 scrollbar-hide">
+                        <!-- Title Card -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 relative overflow-hidden">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-10 -mt-10 opacity-50">
+                            </div>
+                            <h1 id="lit-title"
+                                class="text-2xl font-bold text-slate-900 leading-tight mb-3 relative z-10"></h1>
+                            <div class="flex flex-wrap gap-y-2 text-sm text-slate-600 mb-4 relative z-10">
+                                <span id="lit-authors" class="font-medium text-slate-800 mr-4"></span>
+                                <span class="text-slate-300">|</span>
+                                <span id="lit-journal" class="mx-4 italic text-blue-600"></span>
+                                <span class="text-slate-300">|</span>
+                                <span id="lit-year" class="ml-4 font-mono bg-slate-100 px-2 py-0.5 rounded"></span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 relative z-10" id="lit-tags-container">
+                                <!-- Tags -->
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <!-- 分页功能暂未实现 -->
+
+                        <!-- Abstract -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3 text-blue-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 6h16M4 12h16M4 18h7"></path>
+                                    </svg>
+                                </div>
+                                摘要
+                            </h3>
+                            <p id="lit-abstract" class="text-slate-700 leading-relaxed text-justify"></p>
                         </div>
-                    </div>
-                </div>
-            </main>
 
-            <!-- ************************** -->
-            <!-- * 文献详情视图     * -->
-            <!-- ************************** -->
-            <main id="detailView" class="flex-1 p-6 overflow-auto hidden bg-white">
-                <!-- 顶部操作栏 -->
-                <div class="flex justify-between items-center mb-4">
-                    <div class="text-sm text-gray-500">
-                        <button id="backToListBtn" class="text-blue-600 hover:underline">&lt; 返回文献列表</button>
-                    </div>
-                    <div class="space-x-2 flex flex-wrap gap-2">
-                        <button id="manageImagesBtn" class="flex-shrink-0 bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-sm hover:bg-blue-100">管理图片</button>
-                        <button id="detailEditTagsBtn" class="flex-shrink-0 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">编辑标签</button>
-                        <button class="flex-shrink-0 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-sm hover:bg-gray-50">导出</button>
-                        <button id="detailDeleteBtn" class="flex-shrink-0 bg-red-50 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm hover:bg-red-100">删除</button>
-                    </div>
-                </div>
+                        <!-- Conclusions & Innovations -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3 text-green-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    主要结论
+                                </h3>
+                                <div id="lit-conclusions" class="text-slate-700 space-y-2"></div>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <h3 class="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center mr-3 text-purple-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    </div>
+                                    创新点
+                                </h3>
+                                <div id="lit-innovations" class="text-slate-700 space-y-2"></div>
+                            </div>
+                        </div>
 
-                <!-- 文献信息 (来自JSON) -->
-                <div id="lit-info" class="mb-6">
-                    <h2 id="lit-title" class="text-2xl font-semibold mb-2"></h2>
-                    <p id="lit-authors" class="text-sm text-gray-600 mb-1"></p>
-                    <p class="text-sm text-gray-500">
-                        <span id="lit-journal"></span>, <span id="lit-year"></span>
-                    </p>
-                </div>
-                <div class="flex items-center gap-3 text-sm text-gray-600 mb-2">
-                    <span class="font-medium">阅读时间:</span>
-                    <span id="readingTimeDisplay" class="text-gray-800">-</span>
-                    <button id="editReadingTimeBtn" class="text-blue-600 hover:underline text-xs">编辑</button>
-                </div>
-                <div id="readingTimeEditor" class="hidden flex items-center gap-2 text-sm text-gray-600 mb-4">
-                    <input id="readingTimeInput" type="datetime-local" class="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                    <button id="saveReadingTimeBtn" class="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700">保存</button>
-                    <button id="cancelReadingTimeBtn" class="text-gray-600 px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">取消</button>
-                </div>
-
-                <!-- [修改] 移除 Tab 导航 -->
-                <!-- <div class="border-b border-gray-200 mb-6"> ... </div> -->
-
-                <!-- [修改] Tab 内容 (改为单页滚动) -->
-                <div id="detailTabContent" class="max-w-4xl mx-auto space-y-10">
-                    <!-- 1. 文献概览 -->
-                    <div id="tab-overview" class="tab-content space-y-4">
-                        <h3 class="text-xl font-semibold border-b pb-2">摘要</h3>
-                        <p id="lit-abstract" class="text-gray-700 leading-relaxed"></p>
-                    </div>
-
-                    <!-- 2. 图表解析 -->
-                    <div id="tab-figures" class="tab-content space-y-4">
-                        <h3 class="text-xl font-semibold border-b pb-2">关键图表</h3>
-                        <div id="lit-figures-list" class="space-y-6">
-                            <!-- 图表项将在这里动态生成 -->
+                        <!-- Shortcomings -->
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                            <h3 class="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+                                <div
+                                    class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center mr-3 text-red-600">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                不足与展望
+                            </h3>
+                            <div id="lit-shortcomings" class="text-slate-700"></div>
                         </div>
                     </div>
 
-                    <!-- 3. 结论与创新点 -->
-                    <div id="tab-conclusion" class="tab-content space-y-4">
-                        <h3 class="text-xl font-semibold border-b pb-2">主要结论</h3>
-                        <div id="lit-conclusions" class="text-gray-700"></div>
-
-                        <h3 class="text-xl font-semibold border-b pb-2 mt-6">创新点</h3>
-                        <div id="lit-innovations" class="text-gray-700"></div>
-                    </div>
-
-                    <!-- 4. 不足与展望 -->
-                    <div id="tab-todos" class="tab-content space-y-4">
-                        <h3 class="text-xl font-semibold border-b pb-2">不足</h3>
-                        <div id="lit-shortcomings" class="text-gray-700"></div>
+                    <!-- Right Column: Figures -->
+                    <div
+                        class="lg:col-span-1 bg-slate-100/50 rounded-xl border border-slate-200 flex flex-col overflow-hidden h-full">
+                        <div
+                            class="p-4 bg-white border-b border-slate-200 flex justify-between items-center shadow-sm z-10">
+                            <h3 class="font-semibold text-slate-800 flex items-center">
+                                <svg class="w-5 h-5 mr-2 text-slate-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                关键图表
+                            </h3>
+                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full font-medium"
+                                id="figureCount">0</span>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-4" id="lit-figures-list">
+                            <!-- Figures -->
+                        </div>
                     </div>
                 </div>
-
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
 
-    <!-- ************************** -->
-    <!-- * 模态弹窗       * -->
-    <!-- ************************** -->
-
-    <!-- 1. 配置API 模态窗 -->
-    <div id="apiModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">配置 API</h3>
-                <button id="closeApiModalBtn" class="text-gray-500 hover:text-gray-800">&times;</button>
-            </div>
-            <div>
-                <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-2">DeepSeek API 密钥</label>
-                <input type="password" id="apiKey" name="apiKey" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="请输入您的API密钥">
-            </div>
-            <div class="mt-6 flex justify-end">
-                <button id="saveApiKeyBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">保存</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- [新] 2. 管理标签 模态窗 (重新添加) -->
-    <div id="tagModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 id="tagModalTitle" class="text-lg font-semibold">管理自定义标签</h3>
-                <button id="closeTagModalBtn" class="text-gray-500 hover:text-gray-800">&times;</button>
-            </div>
-            <!-- [新] 添加新标签 (可隐藏) -->
-            <div id="addNewTagSection" class="flex space-x-2 mb-4">
-                <input type="text" id="newTagName" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="输入新标签名称">
-                <button id="addNewTagBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">添加</button>
-            </div>
-            <!-- 现有标签列表 -->
-            <div class="space-y-2 max-h-60 overflow-auto" id="existingTagsList">
-                <!-- 标签列表将动态填充 -->
+    <!-- Modals -->
+    <!-- API Key Modal -->
+    <div id="apiModal"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50 transition-opacity">
+        <div
+            class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100 border border-slate-100">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">配置 DeepSeek API</h3>
+            <p class="text-sm text-slate-500 mb-4">请输入您的 API 密钥以启用 AI 分析功能。</p>
+            <input type="password" id="apiKey"
+                class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="sk-...">
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="closeApiModalBtn"
+                    class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium text-sm">取消</button>
+                <button id="saveApiKeyBtn"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm shadow-sm">保存</button>
             </div>
         </div>
     </div>
 
-    <!-- [新] 3. 加载中 覆盖层 (之前存在，保持) -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-75 flex-col flex items-center justify-center hidden z-[100]">
-        <img src="/assets/zhanshi.jpg" alt="分析展示图" class="max-w-xs w-full mb-4 rounded-xl shadow-2xl border-4 border-white/30" loading="lazy">
-        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-        <h2 class="text-xl font-semibold text-white">正在分析中...</h2>
-        <p class="text-white">这可能需要1-2分钟，请勿关闭页面。</p>
-    </div>
-    
-    <!-- [新] 4. 自定义确认框 模态窗 (重新添加) -->
-    <div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-[101]">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
-            <h3 id="confirmTitle" class="text-lg font-semibold mb-4">确认操作</h3>
-            <p id="confirmMessage" class="text-gray-700 mb-6">您确定要执行此操作吗？</p>
-            <div class="flex justify-end space-x-2">
-                <button id="confirmCancelBtn" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
-                    取消
-                </button>
-                <button id="confirmOkBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
-                    确认删除
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. 图片管理 模态窗 -->
-    <div id="imageManagerModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center hidden z-[103]">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl p-6 relative">
-            <div class="flex justify-between items-center mb-4">
+    <!-- Metadata Edit Modal -->
+    <div id="metadataModal"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 border border-slate-100">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">编辑文献信息</h3>
+            <div class="space-y-4">
                 <div>
-                    <h3 class="text-lg font-semibold">管理图片标注</h3>
-                    <p class="text-sm text-gray-500">按照列表顺序自动编号；标记为“子图”会继承上一张图号，封面/忽略不会参与编号。</p>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">标题</label>
+                    <input type="text" id="editMetaTitle"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
                 </div>
-                <button id="closeImageManagerBtn" class="text-2xl leading-none text-gray-500 hover:text-gray-800">&times;</button>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">作者 (逗号分隔)</label>
+                    <input type="text" id="editMetaAuthors"
+                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">年份</label>
+                        <input type="text" id="editMetaYear"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">期刊</label>
+                        <input type="text" id="editMetaJournal"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow">
+                    </div>
+                </div>
             </div>
-            <div id="imageMetadataError" class="text-sm text-red-500 mb-3 hidden"></div>
-            <div id="imageMetadataContainer" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-                <!-- 图片元数据表单 -->
-            </div>
-            <div class="flex justify-end space-x-2 mt-6">
-                <button class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50" onclick="hideImageManagerModal()">取消</button>
-                <button id="saveImageMetadataBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">保存设置</button>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="cancelMetadataBtn"
+                    class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium text-sm">取消</button>
+                <button id="saveMetadataBtn"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm shadow-sm">保存</button>
             </div>
         </div>
     </div>
-    
-    <!-- 5. 图片查看 模态窗 -->
-    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center hidden z-[102]" onclick="closeModal(this)">
-        <img id="imageModalContent" src="" alt="文献图片" class="max-w-[90vw] max-h-[90vh] rounded-lg shadow-xl">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center hidden z-[100]">
+        <div class="relative">
+            <div class="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+        </div>
+        <h2 class="mt-4 text-xl font-bold text-white tracking-wide">AI 深度分析中...</h2>
+        <p class="text-slate-400 mt-2 font-light">正在提取核心观点与图表，请稍候</p>
     </div>
 
-    <!-- 主应用JavaScript -->
+    <!-- Image Modal (Lightbox) -->
+    <div id="imageModal"
+        class="fixed inset-0 bg-black/95 flex items-center justify-center hidden z-[102] cursor-zoom-out"
+        onclick="this.classList.add('hidden')">
+        <img id="imageModalContent" src=""
+            class="max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl transition-transform scale-100 cursor-default"
+            onclick="event.stopPropagation()">
+        <button class="absolute top-4 right-4 text-white/50 hover:text-white"><svg class="w-8 h-8" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg></button>
+    </div>
+
+    <!-- Image Manager Modal -->
+    <div id="imageManagerModal"
+        class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center hidden z-[101]">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-5xl p-6 h-[85vh] flex flex-col border border-slate-100">
+            <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">管理图片标注</h3>
+                    <p class="text-xs text-slate-500 mt-1">调整图片顺序、类别及描述信息</p>
+                </div>
+                <button id="closeImageManagerBtn" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+            <div id="imageMetadataContainer" class="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-hide">
+                <!-- Dynamic Content -->
+            </div>
+            <div class="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button onclick="document.getElementById('imageManagerModal').classList.add('hidden')"
+                    class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium text-sm">取消</button>
+                <button id="saveImageMetadataBtn"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm shadow-sm">保存设置</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // 全局变量
-        let apiKey = localStorage.getItem('deepseek_api_key') || '';
+        // --- Global State ---
+        let literatureList = [];
         let currentPaperId = null;
+        let apiKey = localStorage.getItem('deepseek_api_key') || '';
         let imageMetadata = [];
-        let currentFigureData = [];
-        let currentReadingTime = '';
 
-        // DOM 元素
-        const importButton = document.getElementById('importButton');
-        const pdfUploadInput = document.getElementById('pdfUploadInput');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const apiModal = document.getElementById('apiModal');
-        const openApiModalBtn = document.getElementById('openApiModalBtn');
-        const closeApiModalBtn = document.getElementById('closeApiModalBtn');
-        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
-        const apiKeyInput = document.getElementById('apiKey');
-        const manageImagesBtn = document.getElementById('manageImagesBtn');
-        const imageManagerModal = document.getElementById('imageManagerModal');
-        const closeImageManagerBtn = document.getElementById('closeImageManagerBtn');
-        const saveImageMetadataBtn = document.getElementById('saveImageMetadataBtn');
-        const imageMetadataContainer = document.getElementById('imageMetadataContainer');
-        const imageMetadataError = document.getElementById('imageMetadataError');
-        const editReadingTimeBtn = document.getElementById('editReadingTimeBtn');
-        const readingTimeDisplay = document.getElementById('readingTimeDisplay');
-        const readingTimeEditor = document.getElementById('readingTimeEditor');
-        const readingTimeInput = document.getElementById('readingTimeInput');
-        const saveReadingTimeBtn = document.getElementById('saveReadingTimeBtn');
-        const cancelReadingTimeBtn = document.getElementById('cancelReadingTimeBtn');
+        // --- DOM Elements ---
+        const els = {
+            listView: document.getElementById('listView'),
+            detailView: document.getElementById('detailView'),
+            tableBody: document.getElementById('literatureTableBody'),
+            emptyState: document.getElementById('emptyState'),
+            searchInput: document.getElementById('searchInput'),
+            yearFilter: document.getElementById('yearFilter'),
+            tagFilter: document.getElementById('tagFilter'),
+            statTotal: document.getElementById('stat-total'),
+            loading: document.getElementById('loadingOverlay'),
+            // Modals
+            apiModal: document.getElementById('apiModal'),
+            metadataModal: document.getElementById('metadataModal'),
+            imageManagerModal: document.getElementById('imageManagerModal'),
+            // Detail Fields
+            litTitle: document.getElementById('lit-title'),
+            litAuthors: document.getElementById('lit-authors'),
+            litJournal: document.getElementById('lit-journal'),
+            litYear: document.getElementById('lit-year'),
+            litAbstract: document.getElementById('lit-abstract'),
+            litConclusions: document.getElementById('lit-conclusions'),
+            litInnovations: document.getElementById('lit-innovations'),
+            litShortcomings: document.getElementById('lit-shortcomings'),
+            litFiguresList: document.getElementById('lit-figures-list'),
+            litTagsContainer: document.getElementById('lit-tags-container'),
+            // Inputs
+            editMetaTitle: document.getElementById('editMetaTitle'),
+            editMetaAuthors: document.getElementById('editMetaAuthors'),
+            editMetaYear: document.getElementById('editMetaYear'),
+            editMetaJournal: document.getElementById('editMetaJournal'),
+        };
 
-        // 初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeEventListeners();
-            loadLiteratureList();
-            
-            // 添加返回列表按钮事件监听
-            document.getElementById('backToListBtn').addEventListener('click', function() {
-                document.getElementById('detailView').classList.add('hidden');
-                document.getElementById('listView').classList.remove('hidden');
-            });
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLiterature();
+            setupEventListeners();
         });
 
-        // 事件监听器初始化
-        function initializeEventListeners() {
-            // 导入文献按钮
-            importButton.addEventListener('click', function() {
-                if (!apiKey) {
-                    showApiModal();
-                    return;
-                }
-                pdfUploadInput.click();
+        function setupEventListeners() {
+            // Navigation
+            document.getElementById('backToListBtn').addEventListener('click', showListView);
+            document.getElementById('nav-home').addEventListener('click', showListView);
+
+            // Upload
+            document.getElementById('importButton').addEventListener('click', () => {
+                if (!apiKey) return els.apiModal.classList.remove('hidden');
+                document.getElementById('pdfUploadInput').click();
+            });
+            document.getElementById('pdfUploadInput').addEventListener('change', handleUpload);
+
+            // Search & Filter
+            els.searchInput.addEventListener('input', renderList);
+            els.yearFilter.addEventListener('change', renderList);
+            els.tagFilter.addEventListener('change', renderList);
+
+            // API Key
+            document.getElementById('openApiModalBtn').addEventListener('click', () => els.apiModal.classList.remove('hidden'));
+            document.getElementById('closeApiModalBtn').addEventListener('click', () => els.apiModal.classList.add('hidden'));
+            document.getElementById('saveApiKeyBtn').addEventListener('click', saveApiKey);
+
+            // Metadata Edit
+            document.getElementById('editMetadataBtn').addEventListener('click', openMetadataModal);
+            document.getElementById('cancelMetadataBtn').addEventListener('click', () => els.metadataModal.classList.add('hidden'));
+            document.getElementById('saveMetadataBtn').addEventListener('click', saveMetadata);
+
+            // PDF Read
+            document.getElementById('readPdfBtn').addEventListener('click', () => {
+                if (currentPaperId) window.open(`/api/literature/${currentPaperId}/pdf`, '_blank');
             });
 
-            // 文件上传处理
-            pdfUploadInput.addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    uploadAndAnalyzePDF(e.target.files[0]);
-                }
+            // Delete
+            document.getElementById('detailDeleteBtn').addEventListener('click', deleteCurrentPaper);
+
+            // Image Manager
+            document.getElementById('manageImagesBtn').addEventListener('click', openImageManager);
+            document.getElementById('closeImageManagerBtn').addEventListener('click', () => els.imageManagerModal.classList.add('hidden'));
+            document.getElementById('saveImageMetadataBtn').addEventListener('click', saveImageMetadata);
+        }
+
+        // --- Core Logic ---
+
+        async function loadLiterature() {
+            try {
+                const res = await fetch('/api/literature');
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                literatureList = data;
+                updateFilters();
+                renderList();
+                updateStats();
+            } catch (e) {
+                console.error(e);
+                // alert('加载失败: ' + e.message);
+            }
+        }
+
+        function updateFilters() {
+            const years = [...new Set(literatureList.map(i => i.year).filter(Boolean))].sort().reverse();
+            const tags = [...new Set(literatureList.flatMap(i => i.custom_tags || []))].sort();
+
+            els.yearFilter.innerHTML = '<option value="">所有年份</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            els.tagFilter.innerHTML = '<option value="">所有标签</option>' + tags.map(t => `<option value="${t}">${t}</option>`).join('');
+        }
+
+        function renderList() {
+            const query = els.searchInput.value.toLowerCase();
+            const year = els.yearFilter.value;
+            const tag = els.tagFilter.value;
+
+            const filtered = literatureList.filter(item => {
+                const matchQuery = (item.title || '').toLowerCase().includes(query) ||
+                    (item.authors || []).join(' ').toLowerCase().includes(query);
+                const matchYear = !year || item.year == year;
+                const matchTag = !tag || (item.custom_tags || []).includes(tag);
+                return matchQuery && matchYear && matchTag;
             });
 
-            // API 配置模态窗
-            openApiModalBtn.addEventListener('click', showApiModal);
-            closeApiModalBtn.addEventListener('click', hideApiModal);
-            saveApiKeyBtn.addEventListener('click', saveApiKey);
-
-            // 图片管理模态窗
-            if (manageImagesBtn) {
-                manageImagesBtn.addEventListener('click', openImageManagerModal);
-            }
-            if (closeImageManagerBtn) {
-                closeImageManagerBtn.addEventListener('click', hideImageManagerModal);
-            }
-            if (saveImageMetadataBtn) {
-                saveImageMetadataBtn.addEventListener('click', saveImageMetadata);
-            }
-            if (editReadingTimeBtn) {
-                editReadingTimeBtn.addEventListener('click', () => {
-                    showReadingTimeEditor();
-                    if (readingTimeInput) {
-                        readingTimeInput.value = toLocalInputValue(currentReadingTime);
-                    }
-                });
-            }
-            if (saveReadingTimeBtn) {
-                saveReadingTimeBtn.addEventListener('click', updateReadingTime);
-            }
-            if (cancelReadingTimeBtn) {
-                cancelReadingTimeBtn.addEventListener('click', hideReadingTimeEditor);
-            }
-
-            // 设置保存的API密钥
-            if (apiKey) {
-                apiKeyInput.value = apiKey;
-            }
-        }
-
-        // 上传和分析PDF文件
-        async function uploadAndAnalyzePDF(file) {
-            if (!file || !file.name.endsWith('.pdf')) {
-                alert('请选择有效的PDF文件');
-                return;
-            }
-
-            if (!apiKey) {
-                alert('请先配置API密钥');
-                showApiModal();
-                return;
-            }
-
-            // 显示加载状态
-            loadingOverlay.classList.remove('hidden');
-
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert('文献导入成功！');
-                    await loadLiteratureList();
-                    await refreshCurrentPaperDetail();
-                } else {
-                    // 上传失败，显示错误信息
-                    alert(`导入失败: ${result.error || '未知错误'}`);
-                }
-            } catch (error) {
-                console.error('上传失败:', error);
-                alert('上传失败，请检查网络连接');
-            } finally {
-                // 隐藏加载状态
-                loadingOverlay.classList.add('hidden');
-                // 重置文件输入
-                pdfUploadInput.value = '';
-            }
-        }
-
-        // API 密钥管理
-        function showApiModal() {
-            apiModal.classList.remove('hidden');
-        }
-
-        function hideApiModal() {
-            apiModal.classList.add('hidden');
-        }
-
-        function saveApiKey() {
-            const key = apiKeyInput.value.trim();
-            if (!key) {
-                alert('请输入API密钥');
-                return;
-            }
-            apiKey = key;
-            localStorage.setItem('deepseek_api_key', key);
-            alert('API密钥已保存');
-            hideApiModal();
-        }
-
-        // 加载文献列表
-        async function loadLiteratureList() {
-            try {
-                const response = await fetch('/api/literature');
-                const literatureList = await response.json();
-                
-                if (response.ok) {
-                    renderLiteratureTable(literatureList);
-                    updateStatistics(literatureList);
-                } else {
-                    console.error('加载文献列表失败:', literatureList.error);
-                }
-            } catch (error) {
-                console.error('加载文献列表失败:', error);
-            }
-        }
-
-        // 渲染文献表格
-        function renderLiteratureTable(literatureList) {
-            const tableBody = document.getElementById('literatureTableBody');
-            const noDataRow = document.getElementById('noDataRow');
-            const paginationInfo = document.getElementById('paginationInfo');
-            
-            // 更新分页信息
-            paginationInfo.textContent = `显示 ${literatureList.length} 条, 共 ${literatureList.length} 条记录`;
-            
-            if (literatureList.length === 0) {
-                noDataRow.classList.remove('hidden');
-                tableBody.innerHTML = '';
-                tableBody.appendChild(noDataRow);
-                return;
-            }
-
-            noDataRow.classList.add('hidden');
-            
-            tableBody.innerHTML = literatureList.map(item => `
-                <tr class="border-b hover:bg-gray-50">
-                    <td class="p-4"><input type="checkbox"></td>
-                    <td class="p-4">
-                        <div class="font-medium">${escapeHtml(item.title || '无标题')}</div>
+            els.tableBody.innerHTML = filtered.map(item => `
+                <tr class="hover:bg-slate-50 transition-colors cursor-pointer group border-b border-slate-100 last:border-0" onclick="loadDetail('${item.id}')">
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2">${escapeHtml(item.title || '无标题')}</div>
+                        <div class="text-xs text-slate-500 mt-1 font-medium">${escapeHtml(item.journal || '')}</div>
                     </td>
-                    <td class="p-4">${escapeHtml((item.authors || []).join(', ') || '未知作者')}</td>
-                    <td class="p-4 text-sm text-gray-600">${formatReadingTime(item.reading_time || item.upload_time)}</td>
-                    <td class="p-4">${escapeHtml(item.year || '未知年份')}</td>
-                    <td class="p-4">
+                    <td class="px-6 py-4 text-sm text-slate-500 truncate max-w-xs">${escapeHtml((item.authors || []).join(', '))}</td>
+                    <td class="px-6 py-4 text-sm text-slate-500 font-mono">${escapeHtml(item.year || '-')}</td>
+                    <td class="px-6 py-4">
                         <div class="flex flex-wrap gap-1">
-                            ${(item.custom_tags || []).map(tag => 
-                                `<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">${escapeHtml(tag)}</span>`
-                            ).join('')}
+                            ${(item.custom_tags || []).slice(0, 3).map(t => `<span class="px-2 py-0.5 rounded text-xs bg-slate-100 text-slate-600 border border-slate-200">${escapeHtml(t)}</span>`).join('')}
+                            ${(item.custom_tags || []).length > 3 ? '<span class="text-xs text-slate-400">...</span>' : ''}
                         </div>
                     </td>
-                    <td class="p-4">
-                        <button class="text-blue-600 hover:underline text-sm" onclick="viewLiteratureDetail('${item.id}')">查看</button>
-                        <button class="text-red-600 hover:underline text-sm ml-2" onclick="deleteLiterature('${item.id}')">删除</button>
+                    <td class="px-6 py-4 text-right text-sm font-medium">
+                        <button class="text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 rounded hover:bg-blue-50" onclick="event.stopPropagation(); loadDetail('${item.id}')">查看</button>
                     </td>
                 </tr>
             `).join('');
+
+            if (filtered.length === 0) {
+                els.tableBody.innerHTML = '';
+                els.emptyState.classList.remove('hidden');
+            } else {
+                els.emptyState.classList.add('hidden');
+            }
+
+            document.getElementById('paperCountBadge').textContent = filtered.length;
         }
 
-        // 更新统计信息
-        function updateStatistics(literatureList) {
-            document.getElementById('stat-total').textContent = literatureList.length;
-            document.getElementById('stat-new').textContent = literatureList.length; // 简化：全部算作新增
-            document.getElementById('stat-tags').textContent = new Set(
-                literatureList.flatMap(item => item.custom_tags || [])
-            ).size;
-        }
-
-        // 查看文献详情
-        async function viewLiteratureDetail(paperId) {
+        async function loadDetail(id) {
+            els.loading.classList.remove('hidden');
             try {
-                // 显示加载状态
-                loadingOverlay.classList.remove('hidden');
-                
-                const response = await fetch(`/api/literature/${paperId}`);
-                const literatureData = await response.json();
-                
-                if (response.ok) {
-                    // 切换到详情视图
-                    document.getElementById('listView').classList.add('hidden');
-                    document.getElementById('detailView').classList.remove('hidden');
-                    
-                    // 先设置当前文献ID，再填充数据
-                    currentPaperId = paperId;
-                    
-                    // 填充文献详情数据
-                    fillLiteratureDetail(literatureData);
-                    await loadImageMetadata(paperId);
-                } else {
-                    alert(`加载文献详情失败: ${literatureData.error || '未知错误'}`);
-                }
-            } catch (error) {
-                console.error('查看文献详情失败:', error);
-                alert('加载文献详情失败，请检查网络连接');
+                const res = await fetch(`/api/literature/${id}`);
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                currentPaperId = id;
+                renderDetail(data);
+                showDetailView();
+            } catch (e) {
+                alert('加载详情失败');
             } finally {
-                // 隐藏加载状态
-                loadingOverlay.classList.add('hidden');
+                els.loading.classList.add('hidden');
             }
         }
 
-        // 填充文献详情数据
-        function fillLiteratureDetail(data) {
-            // 基本信息
-            document.getElementById('lit-title').textContent = data.文献信息?.标题 || '无标题';
-            document.getElementById('lit-authors').textContent = data.文献信息?.作者?.join(', ') || '未知作者';
-            document.getElementById('lit-journal').textContent = data.文献信息?.期刊 || '未知期刊';
-            document.getElementById('lit-year').textContent = data.文献信息?.年份 || '未知年份';
-            
-            // 摘要 - 修正路径
-            document.getElementById('lit-abstract').textContent = data.内容提取?.摘要 || '无摘要';
-            
-            // 结论与创新点 - 修正路径
-            const conclusions = data.内容提取?.结论 || [];
-            const innovations = data.内容提取?.创新点 || [];
-            document.getElementById('lit-conclusions').innerHTML = conclusions.length > 0 
-                ? conclusions.map(c => `<p class="mb-2">• ${escapeHtml(c)}</p>`).join('')
-                : '<p class="text-gray-500">无结论信息</p>';
-            document.getElementById('lit-innovations').innerHTML = innovations.length > 0 
-                ? innovations.map(i => `<p class="mb-2">• ${escapeHtml(i)}</p>`).join('')
-                : '<p class="text-gray-500">无创新点信息</p>';
-            
-            // 不足 - 修正路径
-            const shortcomings = data.内容提取?.不足 || [];
-            document.getElementById('lit-shortcomings').innerHTML = shortcomings.length > 0 
-                ? shortcomings.map(s => `<p class="mb-2">• ${escapeHtml(s)}</p>`).join('')
-                : '<p class="text-gray-500">无不足信息</p>';
-            
-            // 图表数据缓存，后续结合图片元数据渲染
-            currentFigureData = data.内容提取?.关键图表 || [];
-            if (Array.isArray(data.image_metadata)) {
-                imageMetadata = data.image_metadata;
-            }
-            currentReadingTime = data.reading_time || data.upload_time || '';
-            updateReadingTimeDisplay(currentReadingTime);
-            renderFiguresList();
-        }
-        // 渲染图表列表（结合图片元数据，仅展示 JSON 中定义的图表）
-        function renderFiguresList() {
-            const figuresContainer = document.getElementById('lit-figures-list');
-            if (!figuresContainer) return;
+        function renderDetail(data) {
+            const info = data.文献信息 || {};
+            const content = data.内容提取 || {};
 
-            const textualFigures = currentFigureData || [];
-            if (!textualFigures || textualFigures.length === 0) {
-                figuresContainer.innerHTML = '<p class="text-gray-500">无图表信息</p>';
+            els.litTitle.textContent = info.标题 || '无标题';
+            els.litAuthors.textContent = (info.作者 || []).join(', ');
+            els.litJournal.textContent = info.期刊 || '未知期刊';
+            els.litYear.textContent = info.年份 || '----';
+
+            els.litAbstract.textContent = content.摘要 || '暂无摘要';
+
+            renderListContent(els.litConclusions, content.结论);
+            renderListContent(els.litInnovations, content.创新点);
+            renderListContent(els.litShortcomings, content.不足);
+
+            // Tags
+            els.litTagsContainer.innerHTML = (data.custom_tags || []).map(t =>
+                `<span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-medium border border-blue-100 hover:bg-blue-100 transition-colors cursor-default">${escapeHtml(t)}</span>`
+            ).join('');
+
+            // Figures
+            renderFigures(content.关键图表 || [], data.image_metadata || []);
+        }
+
+        function renderListContent(container, items) {
+            if (!items || items.length === 0) {
+                container.innerHTML = '<span class="text-slate-400 italic text-sm pl-4">未提取到相关信息</span>';
+                return;
+            }
+            container.innerHTML = items.map(i => `<p class="mb-2 text-sm leading-relaxed text-slate-700 pl-4 border-l-2 border-slate-100 hover:border-blue-200 transition-colors">• ${escapeHtml(i)}</p>`).join('');
+        }
+
+        function renderFigures(textFigures, imgMetadata) {
+            const container = els.litFiguresList;
+            document.getElementById('figureCount').textContent = `${textFigures.length}`;
+
+            if (textFigures.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-400 py-10 flex flex-col items-center"><svg class="w-10 h-10 mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>无图表信息</div>';
                 return;
             }
 
-            figuresContainer.innerHTML = textualFigures.map((figure, index) => renderFigureCard(figure, index)).join('');
-        }
-
-        async function refreshCurrentPaperDetail() {
-            if (!currentPaperId) return;
-            try {
-                const response = await fetch(`/api/literature/${currentPaperId}`);
-                const literatureData = await response.json();
-                if (response.ok) {
-                    fillLiteratureDetail(literatureData);
-                    if (Array.isArray(literatureData.image_metadata)) {
-                        imageMetadata = literatureData.image_metadata;
-                        renderFiguresList();
-                    } else {
-                        await loadImageMetadata(currentPaperId);
-                    }
-                }
-            } catch (error) {
-                console.error('刷新文献详情失败:', error);
-            }
-        }
-
-        // 图片元数据管理
-        async function loadImageMetadata(paperId) {
-            imageMetadata = [];
-            renderFiguresList();
-            if (!paperId) return;
-
-            try {
-                const response = await fetch(`/api/literature/${paperId}/images/metadata`);
-                const result = await response.json();
-                if (response.ok) {
-                    imageMetadata = result.metadata || [];
-                    renderFiguresList();
-                } else {
-                    console.error('加载图片元数据失败:', result.error);
-                }
-            } catch (error) {
-                console.error('加载图片元数据失败:', error);
-            }
-        }
-
-        function openImageManagerModal() {
-            if (!currentPaperId) {
-                alert('请先选择文献');
-                return;
-            }
-            if (!imageMetadata || imageMetadata.length === 0) {
-                alert('当前文献没有可管理的图片');
-                return;
-            }
-            renderImageManagerForm();
-            if (imageMetadataError) {
-                imageMetadataError.classList.add('hidden');
-                imageMetadataError.textContent = '';
-            }
-            imageManagerModal?.classList.remove('hidden');
-        }
-
-        function hideImageManagerModal() {
-            imageManagerModal?.classList.add('hidden');
-        }
-
-        function renderImageManagerForm() {
-            if (!imageMetadataContainer) return;
-            if (!imageMetadata || imageMetadata.length === 0) {
-                imageMetadataContainer.innerHTML = '<p class="text-gray-500">暂无图片</p>';
-                return;
-            }
-
-            const categoryOptions = [
-                { value: 'figure', label: '普通图' },
-                { value: 'subfigure', label: '子图 (同一图内)' },
-                { value: 'cover', label: '封面' },
-                { value: 'ignore', label: '忽略' }
-            ];
-
-            imageMetadataContainer.innerHTML = imageMetadata.map((item, index) => {
-                const imageSrc = `/api/literature/${currentPaperId}/images/${encodeURIComponent(item.filename)}`;
-                const optionsHtml = categoryOptions.map(opt => `
-                    <option value="${opt.value}" ${item.category === opt.value ? 'selected' : ''}>${opt.label}</option>
-                `).join('');
+            container.innerHTML = textFigures.map((fig, idx) => {
+                const figId = (fig.图序号 || '').replace(/[^0-9]/g, '');
+                const matchedImg = imgMetadata.find(m => (m.figure_id || '').includes(figId) && m.category !== 'ignore');
+                const imgSrc = matchedImg ? `/api/literature/${currentPaperId}/images/${matchedImg.filename}` : null;
 
                 return `
-                <div class="border rounded-lg p-4 flex flex-col md:flex-row gap-4" data-image-row="${index}">
-                    <div class="w-full md:w-32 flex-shrink-0">
-                        <img src="${imageSrc}" alt="${escapeHtml(item.filename)}" class="w-32 h-32 object-cover rounded-lg border" onerror="this.style.display='none';">
+                    <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all group">
+                        ${imgSrc ? `<div class="h-40 bg-slate-50 rounded-md mb-3 overflow-hidden flex items-center justify-center cursor-pointer relative" onclick="openImage('${imgSrc}')">
+                            <img src="${imgSrc}" class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300">
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors"></div>
+                        </div>` : ''}
+                        <h5 class="font-bold text-sm text-slate-800 mb-1 flex justify-between">
+                            ${escapeHtml(fig.图序号 || '')}
+                            ${!imgSrc ? '<span class="text-xs text-slate-300 font-normal">无图片</span>' : ''}
+                        </h5>
+                        <p class="text-xs text-slate-600 line-clamp-3 leading-relaxed">${escapeHtml(fig.核心内容 || '')}</p>
                     </div>
-                    <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">文件名</label>
-                            <p class="text-sm text-gray-700 break-all">${escapeHtml(item.filename)}</p>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">图号</label>
-                            <input type="text" data-image-field="figure_id" value="${item.figure_id || ''}" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">标签/描述</label>
-                            <input type="text" data-image-field="label" value="${item.label || ''}" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">类别</label>
-                            <select data-image-field="category" class="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                ${optionsHtml}
-                            </select>
-                        </div>
-                    </div>
-                </div>`;
+                `;
             }).join('');
-
-            bindMetadataFieldEvents();
         }
 
-        function bindMetadataFieldEvents() {
-            if (!imageMetadataContainer) return;
-            imageMetadataContainer.querySelectorAll('select[data-image-field="category"]').forEach(select => {
-                select.addEventListener('change', handleImageCategoryChange);
-                handleImageCategoryChange({ target: select });
-            });
-        }
+        // --- Actions ---
 
-        function handleImageCategoryChange(event) {
-            const select = event.target;
-            const row = select.closest('[data-image-row]');
-            if (!row) return;
-            const figureInput = row.querySelector('[data-image-field="figure_id"]');
-            if (!figureInput) return;
-            const disable = ['cover', 'ignore', 'subfigure'].includes(select.value);
-            figureInput.disabled = disable;
-            figureInput.classList.toggle('bg-gray-100', disable);
-            if (disable) {
-                if (select.value === 'cover') {
-                    figureInput.value = '';
-                } else if (select.value === 'ignore') {
-                    figureInput.value = '';
-                } else if (select.value === 'subfigure') {
-                    figureInput.value = '';
-                    figureInput.placeholder = '继承上一图号';
-                }
-            } else {
-                figureInput.placeholder = '';
-            }
-        }
+        async function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        function collectImageMetadataFromForm() {
-            if (!imageMetadataContainer || !imageMetadata || imageMetadata.length === 0) {
-                return [];
-            }
-
-            const raw = imageMetadata.map((item, index) => {
-                const row = imageMetadataContainer.querySelector(`[data-image-row="${index}"]`);
-                if (!row) return { ...item };
-                const figureInput = row.querySelector('[data-image-field="figure_id"]');
-                const labelInput = row.querySelector('[data-image-field="label"]');
-                const categorySelect = row.querySelector('select[data-image-field="category"]');
-
-                return {
-                    filename: item.filename,
-                    figure_id: figureInput ? figureInput.value.trim() : '',
-                    label: labelInput ? labelInput.value.trim() : '',
-                    category: categorySelect ? categorySelect.value : 'figure'
-                };
-            });
-
-            return enforceSequentialFigureIds(raw);
-        }
-
-        async function saveImageMetadata() {
-            if (!currentPaperId) return;
-            const payload = collectImageMetadataFromForm();
-            if (imageMetadataError) {
-                imageMetadataError.classList.add('hidden');
-                imageMetadataError.textContent = '';
-            }
+            els.loading.classList.remove('hidden');
+            const fd = new FormData();
+            fd.append('file', file);
 
             try {
-                if (saveImageMetadataBtn) {
-                    saveImageMetadataBtn.disabled = true;
-                }
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${apiKey}` },
+                    body: fd
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
 
-                const response = await fetch(`/api/literature/${currentPaperId}/images/metadata`, {
+                await loadLiterature();
+                alert('导入成功');
+            } catch (e) {
+                alert('导入失败: ' + e.message);
+            } finally {
+                els.loading.classList.add('hidden');
+                e.target.value = '';
+            }
+        }
+
+        function openMetadataModal() {
+            els.editMetaTitle.value = els.litTitle.textContent;
+            els.editMetaAuthors.value = els.litAuthors.textContent;
+            els.editMetaYear.value = els.litYear.textContent;
+            els.editMetaJournal.value = els.litJournal.textContent;
+            els.metadataModal.classList.remove('hidden');
+        }
+
+        async function saveMetadata() {
+            const payload = {
+                title: els.editMetaTitle.value,
+                authors: els.editMetaAuthors.value.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+                year: els.editMetaYear.value,
+                journal: els.editMetaJournal.value
+            };
+
+            try {
+                const res = await fetch(`/api/literature/${currentPaperId}/metadata`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ metadata: payload })
+                    body: JSON.stringify(payload)
                 });
-                const result = await response.json();
+                if (!res.ok) throw new Error('Failed to update');
 
-                if (response.ok) {
-                    imageMetadata = result.metadata || [];
-                    renderFiguresList();
-                    hideImageManagerModal();
-                    await loadLiteratureList();
-                    await refreshCurrentPaperDetail();
-                    alert('图片信息已更新');
-                } else if (imageMetadataError) {
-                    imageMetadataError.textContent = result.error || '保存失败';
-                    imageMetadataError.classList.remove('hidden');
-                }
-            } catch (error) {
-                console.error('保存图片元数据失败:', error);
-                if (imageMetadataError) {
-                    imageMetadataError.textContent = '保存失败，请检查网络连接';
-                    imageMetadataError.classList.remove('hidden');
-                }
-            } finally {
-                if (saveImageMetadataBtn) {
-                    saveImageMetadataBtn.disabled = false;
-                }
+                // Refresh
+                await loadDetail(currentPaperId);
+                await loadLiterature(); // Refresh list too
+                els.metadataModal.classList.add('hidden');
+            } catch (e) {
+                alert('保存失败');
             }
         }
 
-        function updateReadingTimeDisplay(value) {
-            currentReadingTime = value || '';
-            if (readingTimeDisplay) {
-                readingTimeDisplay.textContent = formatReadingTime(value);
+        async function deleteCurrentPaper() {
+            if (!confirm('确定要删除这篇文献吗？')) return;
+            try {
+                await fetch(`/api/literature/${currentPaperId}`, { method: 'DELETE' });
+                showListView();
+                loadLiterature();
+            } catch (e) {
+                alert('删除失败');
             }
         }
 
-        function formatReadingTime(value) {
-            if (!value) {
-                return '未设置';
-            }
+        // Image Manager Logic
+        const imgContainer = document.getElementById('imageMetadataContainer');
 
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) {
-                return '格式错误';
-            }
-            return date.toLocaleString('zh-CN');
-        }
-
-        function toLocalInputValue(value) {
-            if (!value) {
-                return '';
-            }
-
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) {
-                return '';
-            }
-
-            const tzOffset = date.getTimezoneOffset();
-            const localDate = new Date(date.getTime() - tzOffset * 60000);
-            return localDate.toISOString().slice(0, 16);
-        }
-
-        function showReadingTimeEditor() {
-            if (readingTimeEditor) {
-                readingTimeEditor.classList.remove('hidden');
-            }
-            if (readingTimeInput) {
-                readingTimeInput.value = toLocalInputValue(currentReadingTime);
-            }
-        }
-
-        function hideReadingTimeEditor() {
-            if (readingTimeEditor) {
-                readingTimeEditor.classList.add('hidden');
-            }
-        }
-
-        async function updateReadingTime() {
-            if (!currentPaperId) {
-                alert('请先选择文献');
-                return;
-            }
-            if (!readingTimeInput || !readingTimeInput.value) {
-                alert('请选择阅读时间');
-                return;
-            }
-
-            const isoValue = new Date(readingTimeInput.value).toISOString();
+        async function openImageManager() {
+            if (!currentPaperId) return;
+            els.imageManagerModal.classList.remove('hidden');
+            imgContainer.innerHTML = '<div class="text-center py-10 text-slate-400">加载中...</div>';
 
             try {
-                if (saveReadingTimeBtn) {
-                    saveReadingTimeBtn.disabled = true;
-                }
+                const res = await fetch(`/api/literature/${currentPaperId}/images/metadata`);
+                const data = await res.json();
+                imageMetadata = data.metadata || [];
+                renderImageManager();
+            } catch (e) {
+                imgContainer.innerHTML = '<div class="text-center py-10 text-red-500">加载失败</div>';
+            }
+        }
 
-                const response = await fetch(`/api/literature/${currentPaperId}/reading-time`, {
+        function renderImageManager() {
+            if (imageMetadata.length === 0) {
+                imgContainer.innerHTML = '<div class="text-center py-10 text-slate-400">暂无图片</div>';
+                return;
+            }
+
+            imgContainer.innerHTML = imageMetadata.map((img, idx) => `
+                <div class="flex gap-4 p-4 border border-slate-200 rounded-xl bg-slate-50 items-start hover:border-blue-200 transition-colors" data-idx="${idx}">
+                    <div class="w-24 h-24 flex-shrink-0 bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
+                        <img src="/api/literature/${currentPaperId}/images/${img.filename}" class="max-w-full max-h-full object-contain">
+                    </div>
+                    <div class="flex-1 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">图号</label>
+                            <input type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" value="${img.figure_id || ''}" onchange="updateImgMeta(${idx}, 'figure_id', this.value)" placeholder="例如: 1">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">类别</label>
+                            <select class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white" onchange="updateImgMeta(${idx}, 'category', this.value)">
+                                <option value="figure" ${img.category === 'figure' ? 'selected' : ''}>普通图</option>
+                                <option value="subfigure" ${img.category === 'subfigure' ? 'selected' : ''}>子图</option>
+                                <option value="cover" ${img.category === 'cover' ? 'selected' : ''}>封面</option>
+                                <option value="ignore" ${img.category === 'ignore' ? 'selected' : ''}>忽略</option>
+                            </select>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">描述</label>
+                            <input type="text" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all" value="${img.label || ''}" onchange="updateImgMeta(${idx}, 'label', this.value)" placeholder="图片描述...">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateImgMeta = (idx, field, value) => {
+            imageMetadata[idx][field] = value;
+        };
+
+        async function saveImageMetadata() {
+            try {
+                await fetch(`/api/literature/${currentPaperId}/images/metadata`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ reading_time: isoValue })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ metadata: imageMetadata })
                 });
-                const result = await response.json();
-
-                if (response.ok) {
-                    const newTime = result.reading_time || isoValue;
-                    updateReadingTimeDisplay(newTime);
-                    hideReadingTimeEditor();
-                    await loadLiteratureList();
-                    await refreshCurrentPaperDetail();
-                } else {
-                    throw new Error(result.error || '更新失败');
-                }
-            } catch (error) {
-                console.error('更新阅读时间失败:', error);
-                alert('阅读时间更新失败，请重试');
-            } finally {
-                if (saveReadingTimeBtn) {
-                    saveReadingTimeBtn.disabled = false;
-                }
+                alert('图片设置已保存');
+                els.imageManagerModal.classList.add('hidden');
+                loadDetail(currentPaperId);
+            } catch (e) {
+                alert('保存失败');
             }
         }
 
-        function renderFigureCard(figure, index) {
-            const heading = figure.图序号 || `图${index + 1}`;
-            const description = figure.核心内容 || '无描述';
-            const typeInfo = figure.图表类型 || '';
-            const supportInfo = figure.支撑结论 || '';
-
-            const imageSection = buildFigureImages(figure, index);
-
-            return `
-                <div class="border rounded-lg p-4">
-                    <div class="flex items-start flex-wrap gap-4">
-                        ${imageSection}
-                        <div class="flex-1 min-w-[220px]">
-                            <h4 class="font-semibold text-lg mb-2">${escapeHtml(heading)}</h4>
-                            <p class="text-gray-700 leading-relaxed">${escapeHtml(description)}</p>
-                            <div class="mt-2 text-sm text-gray-600">
-                                <strong>图表类型:</strong> ${escapeHtml(typeInfo || '未知')}
-                            </div>
-                            <div class="mt-1 text-sm text-gray-600">
-                                <strong>支撑结论:</strong> ${escapeHtml(supportInfo || '暂无')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+        // --- Helpers ---
+        function showListView() {
+            els.detailView.classList.add('hidden');
+            els.listView.classList.remove('hidden');
         }
-
-        function buildFigureImages(figure, index) {
-            const matches = getMetadataMatchesForFigure(figure);
-            if (matches.length > 0) {
-                const imagesHtml = matches.map(item => {
-                    const src = `/api/literature/${currentPaperId}/images/${encodeURIComponent(item.filename)}`;
-                    return `
-                        <div class="w-32 h-32 rounded-lg overflow-hidden border">
-                            <img src="${src}" alt="${escapeHtml(item.label || item.filename)}"
-                                 class="w-full h-full object-cover cursor-pointer hover:opacity-80"
-                                 onclick="openImageModal('${src}')">
-                        </div>
-                    `;
-                }).join('');
-
-                return `
-                    <div class="flex flex-wrap gap-3">
-                        ${imagesHtml}
-                    </div>
-                `;
+        function showDetailView() {
+            els.listView.classList.add('hidden');
+            els.detailView.classList.remove('hidden');
+        }
+        function saveApiKey() {
+            const key = document.getElementById('apiKey').value;
+            if (key) {
+                apiKey = key;
+                localStorage.setItem('deepseek_api_key', key);
+                els.apiModal.classList.add('hidden');
+                alert('API Key 已保存');
             }
-
-            // 回退到默认命名的图片资源
-            const fallbackId = (figure.图序号 || `图${index + 1}`).replace(/[^0-9a-zA-Z]/g, '') || (index + 1).toString();
-            const formats = ['png', 'jpeg', 'jpg'];
-            const fallbackImages = formats.map((format, formatIndex) => {
-                const src = `/api/literature/${currentPaperId}/images/fig${fallbackId}.${format}`;
-                const isFirst = formatIndex === 0;
-                return `
-                    <img src="${src}"
-                         alt="${escapeHtml(figure.图序号 || `图${index + 1}`)}"
-                         class="w-full h-full object-cover cursor-pointer hover:opacity-80 ${!isFirst ? 'hidden' : ''}"
-                         onerror="${formatIndex < formats.length - 1 ? `this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden');` : `this.style.display='none'; document.getElementById('no-image-${index}').style.display='flex';`}"
-                         onclick="openImageModal('${src}')">
-                `;
-            }).join('');
-
-            return `
-                <div class="flex-shrink-0 w-48 h-32 bg-gray-100 rounded-lg overflow-hidden">
-                    ${fallbackImages}
-                    <div id="no-image-${index}" class="w-full h-full flex items-center justify-center text-gray-400 hidden">
-                        无图片
-                    </div>
-                </div>
-            `;
         }
-
-        function getMetadataMatchesForFigure(figure) {
-            const normalized = normalizeFigureId(figure?.图序号);
-            if (!normalized) return [];
-            return (imageMetadata || []).filter(item => {
-                if (!item || !item.figure_id) return false;
-                if (item.category === 'cover' || item.category === 'ignore') return false;
-                return normalizeFigureId(item.figure_id) === normalized;
-            });
+        function updateStats() {
+            els.statTotal.textContent = literatureList.length;
         }
-
-        function normalizeFigureId(value) {
-            if (!value) return '';
-            return value
-                .toString()
-                .replace(/图|fig|figure|图表/gi, '')
-                .replace(/[^a-zA-Z0-9]/g, '')
-                .toLowerCase();
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
-
-        function enforceSequentialFigureIds(list) {
-            let nextFigureNumber = 1;
-            let currentGroupId = '';
-
-            return list.map(item => {
-                const normalized = { ...item };
-                const category = normalized.category || 'figure';
-
-                if (category === 'cover' || category === 'ignore') {
-                    normalized.figure_id = '';
-                    currentGroupId = '';
-                    return normalized;
-                }
-
-                if (category === 'subfigure') {
-                    if (!currentGroupId) {
-                        currentGroupId = String(nextFigureNumber);
-                        nextFigureNumber += 1;
-                    }
-                    normalized.figure_id = currentGroupId;
-                    return normalized;
-                }
-
-                normalized.figure_id = String(nextFigureNumber);
-                currentGroupId = normalized.figure_id;
-                nextFigureNumber += 1;
-                return normalized;
-            });
-        }
-
-        // 打开图片模态窗
-        function openImageModal(imageSrc) {
-            document.getElementById('imageModalContent').src = imageSrc;
+        function openImage(src) {
+            document.getElementById('imageModalContent').src = src;
             document.getElementById('imageModal').classList.remove('hidden');
         }
 
-        // 删除文献
-        async function deleteLiterature(paperId) {
-            const confirmed = confirm('确定要删除这篇文献吗？');
-            if (!confirmed) return;
-
-            try {
-                const response = await fetch(`/api/literature/${paperId}`, {
-                    method: 'DELETE'
-                });
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    alert('文献已删除');
-                    await loadLiteratureList();
-                    if (currentPaperId === paperId) {
-                        currentPaperId = null;
-                        document.getElementById('detailView').classList.add('hidden');
-                        document.getElementById('listView').classList.remove('hidden');
-                    } else {
-                        await refreshCurrentPaperDetail();
-                    }
-                } else {
-                    alert('删除失败: ' + (result.error || '未知错误'));
-                }
-            } catch (error) {
-                console.error('删除失败:', error);
-                alert('删除失败，请检查网络连接');
-            }
-        }
-
-        // 工具函数：转义HTML
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // 模态窗关闭函数
-        function closeModal(modalElement) {
-            modalElement.classList.add('hidden');
-        }
     </script>
+</body>
+
+</html>

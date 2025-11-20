@@ -1,4 +1,6 @@
 import logging
+import os
+
 
 from flask import Blueprint, jsonify, request, send_from_directory
 
@@ -122,3 +124,28 @@ def serve_image(paper_id, filename):
     except Exception as exc:
         logger.exception("Failed to serve image")
         return jsonify({"error": "Failed to serve image"}), 500
+
+
+@literature_bp.route("/api/literature/<paper_id>/pdf", methods=["GET"])
+def serve_pdf(paper_id):
+    try:
+        pdf_path = service.get_pdf_path(paper_id)
+        directory = os.path.dirname(pdf_path)
+        filename = os.path.basename(pdf_path)
+        return send_from_directory(directory, filename)
+    except LiteratureServiceError as exc:
+        return jsonify({"error": str(exc)}), exc.status_code
+    except Exception as exc:
+        logger.exception("Failed to serve PDF")
+        return jsonify({"error": "Failed to serve PDF"}), 500
+
+
+@literature_bp.route("/api/literature/<paper_id>/metadata", methods=["PUT"])
+def update_metadata(paper_id):
+    payload = request.json or {}
+    
+    def operation():
+        updated_info = service.update_basic_metadata(paper_id, payload)
+        return {"success": True, "metadata": updated_info}
+
+    return _execute(operation)
