@@ -87,7 +87,7 @@
     "fig12.png"
   ],
   "reading_time": "2025-11-20T11:30:47.240950+00:00",
-  "upload_time": "2025-11-20T11:30:47.240950+00:00",
+  "upload_time": "2025-11-20T11:30:00.000Z",
   "custom_tags": [],
   "image_metadata": [
     {
@@ -162,5 +162,6 @@
       "label": "",
       "category": "figure"
     }
-  ]
+  ],
+  "time_label": "2025-11-20T11:30:00.000Z"
 }

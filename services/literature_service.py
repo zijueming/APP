@@ -242,6 +242,7 @@ class LiteratureService:
         analysis_data["image_files"] = image_files
         analysis_data["reading_time"] = reading_time
         analysis_data["upload_time"] = analysis_data.get("upload_time") or reading_time
+        analysis_data["time_label"] = analysis_data.get("time_label") or reading_time
 
         custom_tags = analysis_data.get("custom_tags")
         if not isinstance(custom_tags, list):
@@ -267,6 +268,7 @@ class LiteratureService:
             "custom_tags": analysis_payload.get("custom_tags", []),
             "reading_time": analysis_payload.get("reading_time"),
             "upload_time": analysis_payload.get("upload_time"),
+            "time_label": analysis_payload.get("time_label"),
         }
 
     def _default_image_metadata(

@@ -296,6 +296,10 @@ class LiteratureRepository:
                 target_key = key_map.get(incoming_key, incoming_key)
                 if target_key in {"标题", "作者", "年份", "期刊"}:
                     meta[target_key] = value
+                elif incoming_key == "upload_time" and value:
+                    data["upload_time"] = value
+                elif incoming_key == "time_label" and value:
+                    data["time_label"] = value
             return data
 
         updated_data = self._mutate_analysis_file(paper_id, _update)
